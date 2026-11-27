@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but the example MUST be committed: the README tells people to copy it,
+# and a template whose setup step references a missing file is broken on
+# arrival. It holds placeholders only — never real values.
+!.env.example
 
 # vercel
 .vercel
