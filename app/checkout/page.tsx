@@ -93,7 +93,7 @@ export default async function CheckoutPage({
         </h1>
 
         <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-          <CheckoutForm selection={d ?? ''} />
+          <CheckoutForm selection={d ?? ''} productName={productName} />
 
           <aside className="border border-line bg-surface p-6 lg:sticky lg:top-8">
             <h2 className="eyebrow text-muted">Your booking</h2>

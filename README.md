@@ -104,6 +104,19 @@ new origin**, because `https://tours.example.com` and
 `https://my-site.onrender.com` are different origins and Kong knows the
 difference.
 
+## Remembering past bookings
+
+A returning guest sees their previous references on the sign-in form and
+fills one in with a tap, instead of hunting for a confirmation email.
+
+Stored in `localStorage`: the **reference and the product name only** —
+never the guest token, never the surname. The token can cancel and
+reschedule, so it stays in an httpOnly cookie that scripts cannot read. A
+reference on its own opens nothing, because signing in also needs the
+surname. There is a "Forget these" control for shared computers.
+
+See `lib/recent-bookings.ts`.
+
 ## Changing it with an AI agent
 
 Expected, and the repo is set up for it. **`AGENTS.md` is the brief** —

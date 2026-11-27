@@ -1,9 +1,15 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
 import { Field } from '@/components/ui/field'
+import {
+  forgetBookings,
+  readRecentBookings,
+  rememberBooking,
+  type RecentBooking,
+} from '@/lib/recent-bookings'
 import {
   cancelBooking,
   signIn,
@@ -16,6 +22,27 @@ export function SignInForm() {
     signIn,
     { error: null }
   )
+
+  /*
+    Read AFTER mount, never during render.
+
+    localStorage does not exist on the server, so reading it while
+    rendering would make the server's HTML and the browser's first render
+    disagree — a hydration mismatch. Starting empty and filling in on
+    mount is the only version that is correct in both places.
+  */
+  const [recent, setRecent] = useState<RecentBooking[]>([])
+  const [reference, setReference] = useState('')
+  useEffect(() => {
+    /*
+      Deferred by a task, not set synchronously — the same pattern as
+      components/ui/reveal.tsx, and for the same reason: a setState
+      during the effect re-renders before the browser has painted, which
+      React flags as a cascading render.
+    */
+    const timer = setTimeout(() => setRecent(readRecentBookings()), 0)
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <form action={action} className="border border-line bg-surface p-8">
@@ -32,6 +59,8 @@ export function SignInForm() {
           required
           placeholder="ORD-ABC123"
           autoCapitalize="characters"
+          value={reference}
+          onChange={e => setReference(e.target.value)}
         />
       </div>
 
@@ -44,8 +73,80 @@ export function SignInForm() {
       <Button type="submit" size="lg" block disabled={pending} className="mt-6">
         {pending ? 'Looking…' : 'Find booking'}
       </Button>
+
+      {recent.length > 0 && (
+        <div className="mt-8 border-t border-line pt-6">
+          <div className="flex items-baseline justify-between gap-4">
+            <h3 className="eyebrow text-muted">Booked on this device</h3>
+            <button
+              type="button"
+              onClick={() => {
+                forgetBookings()
+                setRecent([])
+              }}
+              className="text-xs text-muted underline-offset-4 hover:text-accent hover:underline"
+            >
+              Forget these
+            </button>
+          </div>
+
+          {/*
+            These fill in the REFERENCE only. The surname is still typed,
+            which is what keeps this a convenience rather than a stored
+            login — the two halves together would be a credential pair
+            sitting on a possibly shared computer.
+          */}
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {recent.map(booking => (
+              <li key={booking.reference}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setReference(booking.reference)}
+                  className={
+                    reference === booking.reference
+                      ? 'border-accent bg-accent/10'
+                      : ''
+                  }
+                >
+                  <span className="truncate">{booking.label}</span>
+                  <span className="tabular text-xs text-muted">
+                    {booking.reference}
+                  </span>
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-muted">
+            Stored in this browser only. We keep the reference, never your
+            name or a way in.
+          </p>
+        </div>
+      )}
     </form>
   )
+}
+
+/**
+ * Records a reference once the guest is looking at the booking.
+ *
+ * Rendered by the signed-in page rather than written inside the sign-in
+ * action, because a Server Action cannot reach localStorage — and
+ * because this way a guest who arrives back from a payment, with no
+ * sign-in at all, is remembered too.
+ */
+export function RememberBooking({
+  reference,
+  label,
+}: {
+  reference: string
+  label: string
+}) {
+  useEffect(() => {
+    rememberBooking({ reference, label })
+  }, [reference, label])
+  return null
 }
 
 export function CancelButton({

@@ -4,7 +4,7 @@ import { kongLive, money } from '@/lib/kong'
 import { SiteFooter, SiteHeader } from '@/components/site-chrome'
 import { signOut } from './actions'
 import { getGuestToken } from '@/lib/guest-session'
-import { CancelButton, SignInForm } from './manage-client'
+import { CancelButton, RememberBooking, SignInForm } from './manage-client'
 
 export const metadata = { title: 'Manage your booking' }
 
@@ -103,6 +103,18 @@ export default async function ManagePage({
     <>
       <SiteHeader />
       <main className="mx-auto max-w-4xl px-6 py-16">
+        {/*
+          Remember this reference for next time. Reference and product
+          name only — never the token, never the surname.
+        */}
+        <RememberBooking
+          reference={order.order.orderReference}
+          label={
+            (order.order.bookings[0]?.product as { name?: string })?.name ??
+            'Your booking'
+          }
+        />
+
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="eyebrow text-accent">

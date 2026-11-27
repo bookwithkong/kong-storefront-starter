@@ -1,12 +1,20 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
 import { Field, TextareaField } from '@/components/ui/field'
+import { rememberBooking } from '@/lib/recent-bookings'
 import { createBooking, type CheckoutState } from './actions'
 
-export function CheckoutForm({ selection }: { selection: string }) {
+export function CheckoutForm({
+  selection,
+  productName,
+}: {
+  selection: string
+  /** Shown in the "booked on this device" list on a later visit. */
+  productName: string
+}) {
   const [state, action, pending] = useActionState<CheckoutState, FormData>(
     createBooking,
     { status: 'idle' }
@@ -21,6 +29,23 @@ export function CheckoutForm({ selection }: { selection: string }) {
    * again. `values` comes back on the error state for exactly this.
    */
   const typed = state.status === 'error' ? state.values : undefined
+
+  /*
+    Remember the reference as soon as the booking exists, so a guest who
+    closes the tab — or goes off to a payment processor — can find it
+    again without their confirmation email.
+
+    In an effect rather than during render: this writes to localStorage,
+    which is a side effect and unavailable on the server.
+  */
+  useEffect(() => {
+    if (state.status === 'booked') {
+      rememberBooking({
+        reference: state.orderReference,
+        label: productName,
+      })
+    }
+  }, [state, productName])
 
   if (state.status === 'booked') {
     return (

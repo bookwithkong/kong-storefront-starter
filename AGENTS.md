@@ -52,6 +52,13 @@ on a shared server, serves one guest's order to the next person who asks.
 and reschedule. It lives in an httpOnly cookie (`lib/guest-session.ts`),
 which is also why nothing sensitive rides the post-payment redirect.
 
+`lib/recent-bookings.ts` does use localStorage, and does not break this
+rule — it stores the order REFERENCE and a product name, never the token
+and never the surname. A reference alone opens nothing, because
+`guest.login` wants a surname with it. Keep it that way: storing both
+halves would turn a convenience into a credential pair sitting in plain
+text on a possibly shared computer.
+
 **Never run a slot time through `new Date(dateString)`.** Kong returns
 `startDate` and `startTime` already in the OPERATOR's timezone. Format the
 parts. Parsing them as an instant reinterprets them in the server's zone
@@ -80,6 +87,13 @@ excludes mandatory charges and tax, so "from 20" becomes 35 at checkout.
 `prefers-reduced-motion` block too — see `.reveal` in `app/globals.css`.
 An element parked at `opacity: 0` whose animation is disabled is not
 unanimated, it is invisible.
+
+**Never read `localStorage` during render.** It does not exist on the
+server, so the server's HTML and the browser's first render disagree —
+a hydration mismatch. Start empty and fill in from an effect, and defer
+the `setState` (see `lib/recent-bookings.ts` and
+`components/ui/reveal.tsx`): a synchronous `setState` inside an effect
+re-renders before paint and the linter will reject it.
 
 ## Two things that fail outside this repo
 
