@@ -208,6 +208,32 @@ export function describeDuration(
 }
 
 /**
+ * What the checkout page shows alongside the form.
+ *
+ * The photograph matters: a guest about to hand over money should see
+ * the thing they are buying, not a grey form. The option name matters
+ * because a product with several options sells very different
+ * experiences under one title.
+ */
+export const CHECKOUT_SUMMARY_QUERY = `
+  query CheckoutSummary($organizationSlug: String!, $productCode: String!) {
+    publicProductDetails(organizationSlug: $organizationSlug, productCode: $productCode) {
+      name
+      tagline
+      heroImageUrl
+      options { id optionName }
+    }
+  }
+`
+
+export interface CheckoutSummary {
+  name: string
+  tagline: string | null
+  heroImageUrl: string | null
+  options: Array<{ id: string; optionName: string }>
+}
+
+/**
  * Cents to something a guest reads, WITH its currency.
  *
  * The currency is not decoration. A booking page that says "from 2,700"

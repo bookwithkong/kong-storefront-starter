@@ -1,35 +1,49 @@
 import Link from 'next/link'
-import { ButtonLink } from '@/components/ui/button'
-import { kong, PRODUCT_CARD_QUERY, type ProductCardExtras } from '@/lib/kong'
+import {
+  CHECKOUT_SUMMARY_QUERY,
+  kong,
+  kongLive,
+  money,
+  type CheckoutSummary,
+} from '@/lib/kong'
 import { SiteFooter, SiteHeader } from '@/components/site-chrome'
+import { ButtonLink } from '@/components/ui/button'
 import { CheckoutForm } from './checkout-form'
 
 /*
- * The panel hands its selection over in the query string, because that is
- * what `buildCheckoutUrl` is for — your routing, not Kong's. The shape is
- * whatever `createCheckoutParams` produced.
+ * The guest's selection arrives in the query string, because that is what
+ * `buildCheckoutUrl` is for — your routing, not Kong's.
  *
  * Treat it as untrusted. It came from a URL the guest can edit, so the
- * price shown here is re-read from Kong rather than trusted from the link,
- * and the order is priced by Kong again when it is created.
+ * price below is QUOTED FROM KONG rather than read from the link, and the
+ * order is priced again by Kong when it is created. A total carried in a
+ * query string is a number anybody can type.
  */
 interface Selection {
   productCode: string
   organizationSlug: string
+  optionId: string
   startTimeUtc: string
   endTimeUtc: string
+  durationMinutes?: number | null
   pricingSelections?: Array<{ pricingTierId: string; quantity: number }>
+  addOnSelections?: Array<{ addOnId: string; quantity: number }> | null
 }
 
 export const metadata = { title: 'Checkout' }
-
-/*
- * The guest's selection arrives in the query string, so this route cannot
- * be prerendered without it — Next refuses to build a static shell around
- * data it has to wait for. Declaring the route blocking is the documented
- * answer for a page that is genuinely per-request, which a checkout is.
- */
 export const instant = false
+
+const WHEN = new Intl.DateTimeFormat(undefined, {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: process.env.NEXT_PUBLIC_KONG_TIMEZONE ?? 'UTC',
+})
+const TIME = new Intl.DateTimeFormat(undefined, {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: process.env.NEXT_PUBLIC_KONG_TIMEZONE ?? 'UTC',
+})
 
 export default async function CheckoutPage({
   searchParams,
@@ -63,18 +77,47 @@ export default async function CheckoutPage({
     )
   }
 
-  // Re-read the product so the summary shows a name, not a code.
-  const data = await kong
-    .request<{ publicProductDetails: (ProductCardExtras & { name?: string }) | null }>(
-      PRODUCT_CARD_QUERY.replace('tagline', 'name tagline'),
-      {
-        organizationSlug: selection.organizationSlug,
+  /*
+   * Both reads in parallel. The summary is catalogue data and comes from
+   * the cached client; the quote is a live price and must not be cached —
+   * it depends on the party, the date and whatever rules the operator has
+   * running today.
+   */
+  const [summaryResult, quote] = await Promise.all([
+    kong
+      .request<{ publicProductDetails: CheckoutSummary | null }>(
+        CHECKOUT_SUMMARY_QUERY,
+        {
+          organizationSlug: selection.organizationSlug,
+          productCode: selection.productCode,
+        }
+      )
+      .catch(() => null),
+    kongLive
+      .quote({
         productCode: selection.productCode,
-      }
-    )
-    .catch(() => null)
+        organizationSlug: selection.organizationSlug,
+        optionId: selection.optionId,
+        startDateTime: selection.startTimeUtc,
+        endDateTime: selection.endTimeUtc,
+        pricingItems: selection.pricingSelections ?? [],
+        ...(selection.addOnSelections?.length
+          ? { addOns: selection.addOnSelections }
+          : {}),
+        ...(selection.durationMinutes != null
+          ? { durationMinutes: selection.durationMinutes }
+          : {}),
+      })
+      // A quote that fails must not block the booking — Kong prices the
+      // order again on creation, which is the number that actually binds.
+      .catch(() => null),
+  ])
 
-  const productName = data?.publicProductDetails?.name ?? selection.productCode
+  const product = summaryResult?.publicProductDetails ?? null
+  const productName = product?.name ?? selection.productCode
+  const optionName = product?.options.find(
+    o => o.id === selection.optionId
+  )?.optionName
   const when = new Date(selection.startTimeUtc)
   const guests = (selection.pricingSelections ?? []).reduce(
     (sum, p) => sum + p.quantity,
@@ -84,47 +127,108 @@ export default async function CheckoutPage({
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-5xl px-6 py-16">
-        <Link href={`/book/${selection.productCode}`} className="eyebrow text-muted hover:text-accent">
+      <main className="mx-auto max-w-6xl px-6 py-14 lg:py-20">
+        <Link
+          href={`/book/${selection.productCode}`}
+          className="eyebrow text-muted transition-colors hover:text-accent"
+        >
           &larr; Back to the cruise
         </Link>
-        <h1 className="mt-5 font-display text-[clamp(2rem,4vw,3rem)] leading-tight">
+        <h1 className="mt-5 max-w-xl font-display text-[clamp(2.25rem,5vw,3.5rem)] leading-[1.05] tracking-tight text-balance">
           Almost aboard
         </h1>
+        <p className="mt-4 max-w-md text-[0.9375rem] leading-relaxed text-muted">
+          One last thing — tell us who is coming, and the crew will have
+          everything ready.
+        </p>
 
-        <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <div className="mt-14 grid gap-10 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start lg:gap-16">
           <CheckoutForm selection={d ?? ''} productName={productName} />
 
-          <aside className="border border-line bg-surface p-6 lg:sticky lg:top-8">
-            <h2 className="eyebrow text-muted">Your booking</h2>
-            <p className="mt-4 font-display text-xl leading-tight">{productName}</p>
-            <dl className="mt-5 space-y-2 border-t border-line pt-4 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">When</dt>
-                <dd className="tabular text-right">
-                  {new Intl.DateTimeFormat(undefined, {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    timeZone: process.env.NEXT_PUBLIC_KONG_TIMEZONE ?? 'UTC',
-                  }).format(when)}
-                </dd>
+          {/*
+            The ticket.
+
+            Photograph first, on purpose: a guest about to pay should see
+            what they are buying. Everything below it is the same
+            information the form will submit, so there is no moment where
+            the two could disagree.
+          */}
+          <aside className="lg:sticky lg:top-8">
+            <div className="overflow-hidden border border-line bg-surface">
+              {product?.heroImageUrl && (
+                <img
+                  src={product.heroImageUrl}
+                  alt=""
+                  className="aspect-[16/10] w-full object-cover"
+                />
+              )}
+
+              <div className="p-7">
+                <p className="eyebrow text-accent">Your booking</p>
+                <h2 className="mt-3 font-display text-2xl leading-tight text-balance">
+                  {productName}
+                </h2>
+                {optionName && optionName !== 'Default' && (
+                  <p className="mt-1 text-sm text-muted">{optionName}</p>
+                )}
+
+                <div className="mt-6 border-t border-line pt-6">
+                  <p className="eyebrow text-muted">Departing</p>
+                  <p className="tabular mt-2 font-display text-xl leading-tight">
+                    {WHEN.format(when)}
+                  </p>
+                  <p className="tabular mt-1 text-sm text-muted">
+                    {TIME.format(when)} · {guests}{' '}
+                    {guests === 1 ? 'guest' : 'guests'}
+                  </p>
+                </div>
+
+                {/*
+                  Kong's own rows, in Kong's own order, never re-added
+                  here. This is a quote for exactly the selection the
+                  form will submit — not a figure carried in the URL,
+                  which the guest could have edited.
+                */}
+                {quote && (
+                  <dl className="mt-6 space-y-2 border-t border-line pt-6 text-sm">
+                    {quote.priceBreakdown.map((row, i) => (
+                      <div
+                        key={i}
+                        className={`flex justify-between gap-4 ${
+                          row.kind === 'TOTAL'
+                            ? 'border-t border-line pt-3 text-base'
+                            : ''
+                        }`}
+                      >
+                        <dt
+                          className={
+                            row.kind === 'TOTAL'
+                              ? 'font-medium'
+                              : 'text-muted'
+                          }
+                        >
+                          {row.label ?? row.kind}
+                        </dt>
+                        <dd
+                          className={`tabular ${
+                            row.kind === 'TOTAL'
+                              ? 'font-display text-xl'
+                              : 'text-muted'
+                          }`}
+                        >
+                          {money(Number(row.amountCents))}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+
+                <p className="mt-6 text-xs leading-relaxed text-muted">
+                  No payment is taken on this page. We confirm the booking
+                  first, then send you to pay.
+                </p>
               </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">Guests</dt>
-                <dd className="tabular">{guests}</dd>
-              </div>
-            </dl>
-            <p className="mt-5 text-xs leading-relaxed text-muted">
-              {/*
-                No total here on purpose. The price the guest sees must be
-                the one Kong quotes at the moment of booking, and a figure
-                carried in from a URL is neither current nor trustworthy.
-              */}
-              Your total is confirmed when the booking is created.
-            </p>
+            </div>
           </aside>
         </div>
       </main>

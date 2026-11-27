@@ -80,12 +80,17 @@ export function CheckoutForm({
   }
 
   return (
-    <form action={action} className="border border-line bg-surface p-8">
+    <form action={action} className="border border-line bg-surface p-8 sm:p-10">
       <input type="hidden" name="selection" value={selection} />
 
-      <h2 className="font-display text-2xl">Who&apos;s sailing?</h2>
+      <h2 className="font-display text-[1.75rem] leading-tight">
+        Who&apos;s sailing?
+      </h2>
+      <p className="mt-2 text-sm text-muted">
+        We only need the lead guest — you can add names for the rest later.
+      </p>
 
-      <div className="mt-6 grid gap-5 sm:grid-cols-2">
+      <div className="mt-8 grid gap-6 sm:grid-cols-2">
         <Field
           label="First name"
           name="firstName"
@@ -101,6 +106,7 @@ export function CheckoutForm({
         <Field
           className="sm:col-span-2"
           label="Email"
+          placeholder="Where your confirmation goes"
           name="email"
           type="email"
           defaultValue={typed?.email ?? ''}
@@ -109,7 +115,8 @@ export function CheckoutForm({
         />
         <Field
           className="sm:col-span-2"
-          label="Phone (optional)"
+          label="Phone"
+          placeholder="Optional, but useful if plans change"
           name="phone"
           type="tel"
           defaultValue={typed?.phone ?? ''}
@@ -117,7 +124,8 @@ export function CheckoutForm({
         />
         <TextareaField
           className="sm:col-span-2"
-          label="Anything we should know? (optional)"
+          label="Anything we should know?"
+          placeholder="Dietary needs, a birthday, anything at all"
           name="specialRequests"
           rows={3}
           defaultValue={typed?.specialRequests ?? ''}
@@ -130,10 +138,10 @@ export function CheckoutForm({
         </Callout>
       )}
 
-      <Button type="submit" size="lg" block disabled={pending} className="mt-6">
+      <Button type="submit" size="lg" block disabled={pending} className="mt-8">
         {pending ? 'Booking…' : 'Confirm booking'}
       </Button>
-      <p className="mt-3 text-center text-xs text-muted">
+      <p className="mt-4 text-center text-xs text-muted">
         You will not be charged on this page.
       </p>
     </form>
