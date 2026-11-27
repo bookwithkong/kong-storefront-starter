@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    A sun sitting on the horizon, with its reflection breaking up on the
+    water below. Drawn for 16px first: the disc is large and solid, and
+    the ripples are only three heavy bars, because anything finer turns to
+    grey mush in a browser tab.
+
+    Next serves app/icon.svg as the favicon automatically — no <link> tag,
+    no favicon.ico. Replace this file to rebrand.
+  -->
+  <rect width="32" height="32" rx="7" fill="#0b2b39"/>
+  <circle cx="16" cy="15" r="7" fill="#e8a93c"/>
+  <!-- The horizon cuts the disc; everything below it is water. -->
+  <rect x="0" y="19" width="32" height="13" fill="#0b2b39"/>
+  <g fill="#e8a93c">
+    <rect x="9"  y="21" width="14" height="2.4" rx="1.2"/>
+    <rect x="11" y="25" width="10" height="2.2" rx="1.1" opacity="0.72"/>
+    <rect x="13" y="28.6" width="6" height="2" rx="1" opacity="0.45"/>
+  </g>
+</svg>

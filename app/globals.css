@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens.
+ *
+ * Everything visual is a variable, and the components reference only
+ * these — so rebranding this site means editing this block, not hunting
+ * through JSX. That is the point of a starter.
+ *
+ * The palette is dusk on the Andaman Sea: a cool haze ground, deep
+ * harbour ink for text, and the low sun as the single accent. `--deep` is
+ * the one colour that does NOT flip between themes — it is the scrim
+ * behind hero imagery, and a photograph needs the same dark behind it in
+ * either theme for its white text to stay legible.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #eef3f5;
+  --surface: #ffffff;
+  --foreground: #0a1d27;
+  --muted: #55707d;
+  --line: #d3dfe5;
+  --accent: #c97a14;
+  --accent-foreground: #ffffff;
+  --deep: #0b2b39;
+  --on-deep: #f2f7f9;
+  --on-deep-muted: #9fbac6;
+}
+
+/*
+ * Guarded so an explicit light choice beats a dark OS. The default
+ * "system" setting stamps nothing on the root element, so this media
+ * query is the only thing separating light from dark for most viewers.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #061219;
+    --surface: #0d2129;
+    --foreground: #e7f0f4;
+    --muted: #86a1ad;
+    --line: #17323e;
+    --accent: #e8a93c;
+    --accent-foreground: #0a1d27;
+  }
+}
+
+/* And again, so an explicit toggle wins in the other direction too. */
+:root[data-theme="dark"] {
+  --background: #061219;
+  --surface: #0d2129;
+  --foreground: #e7f0f4;
+  --muted: #86a1ad;
+  --line: #17323e;
+  --accent: #e8a93c;
+  --accent-foreground: #0a1d27;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-deep: var(--deep);
+  --color-on-deep: var(--on-deep);
+  --color-on-deep-muted: var(--on-deep-muted);
+  --font-sans: var(--font-sans-stack);
+  --font-display: var(--font-display-stack);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans-stack), system-ui, sans-serif;
+}
+
+/* Prices and durations sit in columns; line the digits up. */
+.tabular { font-variant-numeric: tabular-nums }
+
+/* The eyebrow: small, spaced, and never shouting. */
+.eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Radix Accordion needs these to animate open/closed. */
+@keyframes acc-down { from { height: 0 } to { height: var(--radix-accordion-content-height) } }
+@keyframes acc-up   { from { height: var(--radix-accordion-content-height) } to { height: 0 } }
+.acc-open  { animation: acc-down 220ms cubic-bezier(0.22, 1, 0.36, 1) }
+.acc-close { animation: acc-up   180ms cubic-bezier(0.22, 1, 0.36, 1) }
+
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+.fade-in { animation: fade-in 180ms ease-out }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px) }
+  to   { opacity: 1; transform: none }
+}
+.rise { animation: rise 600ms cubic-bezier(0.22, 1, 0.36, 1) both }
+
+/*
+ * One deliberate motion moment, on the hero only. Everything else on the
+ * page is still. Respect the system preference rather than overriding it.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .rise, .fade-in, .acc-open, .acc-close { animation: none }
+  html { scroll-behavior: auto }
 }
