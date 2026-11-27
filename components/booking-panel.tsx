@@ -6,6 +6,8 @@ import {
   KONG_API_ORIGIN,
   createStorefrontClient,
   getCalendarDate,
+  getCurrentYearMonthInTimezone,
+  isViewingCurrentMonth,
   resolveBookingSelection,
   resolveOptionFirst,
   type BookingOptionLike,
@@ -15,7 +17,8 @@ import {
 } from '@bookwithkong/storefront'
 import { useBooking } from '@bookwithkong/storefront/react'
 import { money, type ProductImage } from '@/lib/kong'
-import { buttonClass } from '@/components/ui/button'
+import { Button, buttonClass } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
 
 /**
  * Your product type — whatever your query selected.
@@ -133,16 +136,6 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
    * has over five thousand bookable slots in ninety days, which no flat
    * list should ever render.
    */
-  const dayFormat = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        timeZone: timezone,
-      }),
-    [timezone]
-  )
   const timeFormat = useMemo(
     () =>
       new Intl.DateTimeFormat(undefined, {
@@ -166,6 +159,11 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
     }
     return [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   }, [slots, timezone])
+
+  const availableDates = useMemo(
+    () => new Set(days.map(([date]) => date)),
+    [days]
+  )
 
   const timesForDay =
     days.find(([date]) => date === booking.selectedDate)?.[1] ?? []
@@ -268,119 +266,94 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
         </div>
 
         <div>
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="eyebrow text-muted">When</span>
-            {/*
-              Month navigation is the hook's, not ours. Without it a guest
-              can only ever see the current month — which on the 28th is
-              three days of availability and looks like a sold-out boat.
-            */}
-            <span className="flex items-center gap-1 text-xs">
-              <button
-                type="button"
-                aria-label="Previous month"
-                onClick={() =>
-                  booking.handleMonthChange(
-                    new Date(
-                      booking.selectedMonth.getFullYear(),
-                      booking.selectedMonth.getMonth() - 1,
-                      1
+          <span className="eyebrow text-muted">When</span>
+
+          <div className="mt-3">
+            {booking.isLoadingTimeslots ? (
+              <p className="py-8 text-center text-sm text-muted">
+                Checking availability…
+              </p>
+            ) : guestTotal === 0 ? (
+              <p className="py-8 text-center text-sm text-muted">
+                Add a guest to see departures.
+              </p>
+            ) : (
+              <>
+                {/*
+                  A month grid, not a list of dates. Thirty-one chips is
+                  four screens of scrolling to answer "is the 14th free",
+                  and it hides what a calendar shows instantly — where
+                  the gaps are.
+
+                  Month navigation belongs to the hook: without it a
+                  guest only ever sees the current month, which on the
+                  28th is three days of availability and looks like a
+                  sold-out boat.
+                */}
+                <Calendar
+                  month={booking.selectedMonth}
+                  availableDates={availableDates}
+                  selected={booking.selectedDate}
+                  onSelect={booking.handleDateSelect}
+                  onMonthChange={booking.handleMonthChange}
+                  canGoBack={
+                    !isViewingCurrentMonth(
+                      {
+                        year: booking.selectedMonth.getFullYear(),
+                        month: booking.selectedMonth.getMonth(),
+                      },
+                      // The OPERATOR's current month, not the viewer's.
+                      // A guest in Sydney on the 1st must not be able to
+                      // page back into a month that is already over in
+                      // Langkawi.
+                      getCurrentYearMonthInTimezone(timezone)
                     )
-                  )
-                }
-                className="px-2 py-1 text-muted transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                &larr;
-              </button>
-              <span className="tabular w-20 text-center text-muted">
-                {booking.selectedMonth.toLocaleString(undefined, {
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </span>
-              <button
-                type="button"
-                aria-label="Next month"
-                onClick={() =>
-                  booking.handleMonthChange(
-                    new Date(
-                      booking.selectedMonth.getFullYear(),
-                      booking.selectedMonth.getMonth() + 1,
-                      1
-                    )
-                  )
-                }
-                className="px-2 py-1 text-muted transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                &rarr;
-              </button>
-            </span>
+                  }
+                  busy={booking.isLoadingTimeslots}
+                />
+
+                {availableDates.size === 0 && (
+                  <p className="mt-4 text-center text-sm text-muted">
+                    No departures this month. Try the next one.
+                  </p>
+                )}
+
+                {booking.selectedDate && timesForDay.length > 0 && (
+                  <div className="mt-5 border-t border-line pt-5">
+                    <span className="eyebrow text-muted">Departing at</span>
+                    <ul className="mt-3 flex flex-wrap gap-2">
+                      {timesForDay.map(slot => {
+                        const active = booking.selectedTimeslot === slot.id
+                        return (
+                          <li key={slot.id}>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              aria-pressed={active}
+                              onClick={() => booking.handleTimeslotSelect(slot)}
+                              className={
+                                active
+                                  ? 'tabular border-accent bg-accent/10 text-foreground'
+                                  : 'tabular'
+                              }
+                            >
+                              {timeFormat.format(new Date(slot.startDateTimeUtc))}
+                              {slot.orderType === 'WAITLISTED' && (
+                                <span className="ml-1 text-xs text-muted">
+                                  waitlist
+                                </span>
+                              )}
+                            </Button>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </>
+            )}
           </div>
-
-          {booking.isLoadingTimeslots ? (
-            <p className="mt-3 text-sm text-muted">Checking availability…</p>
-          ) : guestTotal === 0 ? (
-            <p className="mt-3 text-sm text-muted">
-              Add a guest to see departures.
-            </p>
-          ) : days.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">
-              No departures this month. Try the next one.
-            </p>
-          ) : (
-            <>
-              <ul className="mt-3 grid grid-cols-3 gap-2">
-                {days.map(([date, daySlots]) => {
-                  const active = booking.selectedDate === date
-                  return (
-                    <li key={date}>
-                      <button
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => booking.handleDateSelect(date)}
-                        className={`w-full border px-2 py-2 text-center text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                          active
-                            ? 'border-accent bg-accent/10 text-foreground'
-                            : 'border-line hover:border-accent/60'
-                        }`}
-                      >
-                        <span className="tabular block">
-                          {dayFormat.format(new Date(daySlots[0].startDateTimeUtc))}
-                        </span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-
-              {booking.selectedDate && (
-                <ul className="mt-4 flex flex-wrap gap-2">
-                  {timesForDay.map(slot => {
-                    const active = booking.selectedTimeslot === slot.id
-                    return (
-                      <li key={slot.id}>
-                        <button
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => booking.handleTimeslotSelect(slot)}
-                          className={`tabular border px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                            active
-                              ? 'border-accent bg-accent/10 text-foreground'
-                              : 'border-line hover:border-accent/60'
-                          }`}
-                        >
-                          {timeFormat.format(new Date(slot.startDateTimeUtc))}
-                          {slot.orderType === 'WAITLISTED' && (
-                            <span className="ml-2 text-xs text-muted">waitlist</span>
-                          )}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </>
-          )}
         </div>
 
         {booking.effectiveAddOns.length > 0 && (

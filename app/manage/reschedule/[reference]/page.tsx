@@ -114,7 +114,6 @@ export default async function ReschedulePage({
 
   const slots: SlotChoice[] = (availability?.timeslots ?? [])
     .filter(s => s.capacityAvailable > 0)
-    .slice(0, 40)
     .map(s => {
       /*
         startDate/startTime are the OPERATOR's wall clock. The mutation
@@ -134,6 +133,9 @@ export default async function ReschedulePage({
         id: s.id,
         startDateTime,
         endDateTime,
+        /* `YYYY-MM-DD` in the OPERATOR's timezone, which is what the
+           calendar keys on — never a Date, which would shift. */
+        date: s.startDate,
         day: DAY.format(local),
         label: TIME.format(local),
       }
