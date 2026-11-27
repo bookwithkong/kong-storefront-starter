@@ -12,6 +12,28 @@ cp .env.example .env.local   # then edit it
 npm run dev                  # http://localhost:3100
 ```
 
+## See it running
+
+**[kong-storefront-starter.onrender.com](https://kong-storefront-starter.onrender.com)**
+
+This repository, unmodified, pointed at a real operator's catalogue. Open a
+cruise from the front page and pick a date: the booking panel fetches live
+availability and a real quote from your browser, which is the part a
+screenshot cannot show you. The photographs open in a lightbox, and on a
+phone the price follows you down the page.
+
+Two things to know before you judge it:
+
+- **It is a live storefront for a real operator.** Browse it freely, but do
+  not complete a checkout — the booking would be genuine.
+- **It sleeps.** The demo runs on Render's free instance type, so the first
+  request after a quiet spell can take up to a minute to wake. That is the
+  host, not the template.
+
+It is an ordinary Next.js app, so it runs anywhere Next runs — Render,
+Vercel, Netlify, Railway, Fly, or your own box. See [Deploying
+it](#deploying-it).
+
 ## Point it at your organization
 
 Everything environment-specific lives in `.env.local`:
@@ -55,8 +77,35 @@ favicon. See *Restyling it* below.
 
 ## Deploying it
 
-It is an ordinary Next.js app, so anywhere that runs Next will do. Three
-that need no configuration beyond environment variables:
+It is an ordinary Next.js app, so anywhere that runs Next will do. Two
+things narrow the field, and they are worth knowing before you pick:
+
+**It needs a real Node runtime, not static file hosting.** Checkout creates
+the order through a Server Action, the guest area is rendered per request,
+and the catalogue is regenerated every five minutes. A static export breaks
+all three — and would also break the photographs, because Kong's signed
+image urls expire an hour after the build. Any plan advertised as "static
+site hosting" is the wrong one.
+
+**Host near Kong.** The Storefront API runs in **Singapore**. Every
+server-rendered page and every checkout makes its Kong calls from your
+server, so a host in Virginia adds a Pacific round trip to the one request
+a guest is waiting on. Pick the closest region your provider offers.
+
+| Host | Free tier | Pros | Cons |
+|---|---|---|---|
+| **Vercel** | Hobby — **non-commercial only** | Next.js is their own framework, so nothing needs configuring. Partial prerendering, ISR and Server Actions are all first-class. Fastest path from repo to url. | Selling tours is commercial use, so a real storefront needs Pro — see below. Functions default to US East, away from Kong. |
+| **Render** | Yes, and no commercial restriction | A `render.yaml` ships in this repo, so setup is three clicks. Singapore region available. The free tier is genuinely usable for showing people. | Free instances sleep after about 15 minutes idle and take a while to wake. Render's own docs say the free tier is not for production. |
+| **Hostinger** | None — 30-day money-back instead | Cheap, predictable monthly cost. Full control of the box, Singapore datacentre, and a managed Node option if you would rather not run one. | Shared plans cannot run this at all; you need VPS or Node.js hosting. On a plain VPS you own the updates, the process manager and the certificates. Introductory prices renew higher. |
+
+**If you are only showing it to someone, Render's free tier is the one.**
+It is the only one of the three that is both free and unrestricted, which is
+why the [demo above](#see-it-running) runs there. **If you are actually
+selling, pick on region and operating cost** — Vercel Pro for the least
+work, Hostinger for the lowest predictable bill.
+
+Netlify, Railway, Fly and your own box are equally fine; they are just not
+documented here.
 
 ### Render
 
@@ -67,15 +116,56 @@ A `render.yaml` ships in this repo, so:
 3. Set the environment variables from the table above in the dashboard.
 
 Render builds with `npm run build` and serves with `npm run start`. The
-free instance type sleeps after inactivity and takes a few seconds to
-wake, which is fine for a soft launch and not for a real storefront —
-move to a paid instance before you advertise it.
+free instance type sleeps after about fifteen minutes of inactivity and can
+take up to a minute to wake, which is fine for showing someone and not for
+a real storefront — move to a paid instance before you advertise it.
+
+The [demo above](#see-it-running) is this repository deployed exactly this
+way, on the free plan, so what you get from these three steps is what you
+are looking at.
 
 ### Vercel
 
 `npx vercel` from this directory, or import the repository at
 vercel.com/new. Next.js is Vercel's own framework, so nothing needs
-configuring; add the environment variables and deploy.
+configuring; add the environment variables and deploy. Partial prerendering
+and the five-minute revalidate are native there.
+
+**The free Hobby plan does not cover this.** Vercel's
+[fair use guidelines](https://vercel.com/docs/limits/fair-use-guidelines)
+restrict Hobby to non-commercial personal use, and taking payment from
+visitors is their own example of commercial use — which is the entire point
+of this template. Commercial deployments need Pro, and Vercel reserves the
+right to remove a Hobby deployment without notice. Use Hobby to try it;
+upgrade before you take a booking.
+
+One thing is worth configuring. Vercel runs functions in **Washington DC**
+by default, and Kong is in Singapore — so checkout, the guest area and every
+catalogue regeneration would cross the Pacific. Add a `vercel.json`:
+
+```json
+{ "regions": ["sin1"] }
+```
+
+Use whichever region is nearest you if your operator is elsewhere.
+
+### Hostinger
+
+Hostinger runs this on its
+[VPS or Node.js](https://www.hostinger.com/nodejs-hosting) plans, which give
+you a real Node runtime, SSR, ISR and API routes. Point the plan at your
+repository, set Node 20+, build with `npm run build` and serve with
+`npm run start`. Choose the Singapore datacentre if Kong is your backend.
+
+There is no free tier — the trial is a 30-day money-back guarantee rather
+than a free plan, so budget for it from day one. The advertised price is
+also an introductory rate on a long commitment and renews higher; check the
+renewal figure, not the headline, before comparing it with Render or Vercel.
+
+**Not on shared hosting.** Hostinger's shared plans do not run a persistent
+Node process — they can host a static export, which this app cannot produce
+for the reasons above. If you are on a shared plan today, this needs an
+upgrade rather than a workaround.
 
 ### Netlify, Railway, Fly, your own box
 
