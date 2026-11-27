@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ButtonLink } from '@/components/ui/button'
 import { kong, PRODUCT_CARD_QUERY, type ProductCardExtras } from '@/lib/kong'
 import { SiteFooter, SiteHeader } from '@/components/site-chrome'
 import { CheckoutForm } from './checkout-form'
@@ -53,12 +54,9 @@ export default async function CheckoutPage({
           <p className="mt-3 text-sm text-muted">
             Pick a cruise and a departure, and we will bring you back here.
           </p>
-          <Link
-            href="/"
-            className="mt-8 inline-block bg-accent px-6 py-3 text-sm font-medium text-accent-foreground"
-          >
+          <ButtonLink href="/" size="lg" className="mt-8">
             See the fleet
-          </Link>
+          </ButtonLink>
         </main>
         <SiteFooter />
       </>

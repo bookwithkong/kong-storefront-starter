@@ -15,6 +15,7 @@ import {
 } from '@bookwithkong/storefront'
 import { useBooking } from '@bookwithkong/storefront/react'
 import { money, type ProductImage } from '@/lib/kong'
+import { buttonClass } from '@/components/ui/button'
 
 /**
  * Your product type — whatever your query selected.
@@ -448,11 +449,16 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
           <a
             href={booking.checkoutUrl ?? '#'}
             aria-disabled={!booking.checkoutUrl}
-            className={`block px-4 py-3.5 text-center text-sm font-medium transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-              booking.checkoutUrl
-                ? 'bg-accent text-accent-foreground hover:opacity-90'
-                : 'pointer-events-none bg-line text-muted'
-            }`}
+            className={buttonClass({
+              size: 'lg',
+              block: true,
+              // An <a> cannot be `disabled`, so the unavailable state is
+              // drawn and made unclickable rather than relying on an
+              // attribute the element does not have.
+              className: booking.checkoutUrl
+                ? ''
+                : 'pointer-events-none bg-line text-muted hover:opacity-100',
+            })}
           >
             {booking.bookNowLabel}
           </a>

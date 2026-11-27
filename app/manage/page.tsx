@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { Button, ButtonLink } from '@/components/ui/button'
+import { Callout } from '@/components/ui/callout'
 import { kongLive, money } from '@/lib/kong'
 import { SiteFooter, SiteHeader } from '@/components/site-chrome'
 import { signOut } from './actions'
@@ -90,9 +91,7 @@ export default async function ManagePage({
         <main className="mx-auto max-w-2xl px-6 py-20">
           <h1 className="font-display text-3xl">Your session has expired</h1>
           <form action={signOut} className="mt-8">
-            <button className="bg-accent px-6 py-3 text-sm font-medium text-accent-foreground">
-              Sign in again
-            </button>
+            <Button size="lg">Sign in again</Button>
           </form>
         </main>
         <SiteFooter />
@@ -114,34 +113,33 @@ export default async function ManagePage({
             </h1>
           </div>
           <form action={signOut}>
-            <button className="text-sm text-muted underline-offset-4 hover:text-accent hover:underline">
-              Sign out
-            </button>
+            <Button variant="ghost">Sign out</Button>
           </form>
         </div>
 
         {status === 'success' && (
-          <div className="mt-10 border border-accent/40 bg-accent/10 p-6">
-            <p className="eyebrow text-accent">Payment received</p>
-            <h2 className="mt-2 font-display text-2xl">You're all set.</h2>
-            <p className="mt-2 text-sm text-muted">
-              A confirmation is on its way to {order.booker.email ?? 'your inbox'}
-              {returnedReference ? ` for ${returnedReference}` : ''}.
-            </p>
-          </div>
+          <Callout
+            tone="positive"
+            eyebrow="Payment received"
+            title="You're all set."
+            role="status"
+            className="mt-10"
+          >
+            A confirmation is on its way to {order.booker.email ?? 'your inbox'}
+            {returnedReference ? ` for ${returnedReference}` : ''}.
+          </Callout>
         )}
 
         {status === 'failed' && (
-          <div className="mt-10 border border-line bg-surface p-6">
-            <p className="eyebrow text-muted">Payment not completed</p>
-            <h2 className="mt-2 font-display text-2xl">
-              Nothing has been charged.
-            </h2>
-            <p className="mt-2 text-sm text-muted">
-              Your booking is held below — you can pay from the link in your
-              email, or start again.
-            </p>
-          </div>
+          <Callout
+            eyebrow="Payment not completed"
+            title="Nothing has been charged."
+            role="status"
+            className="mt-10"
+          >
+            Your booking is held below — you can pay from the link in your
+            email, or start again.
+          </Callout>
         )}
 
         <ul className="mt-12 space-y-8">
@@ -234,12 +232,12 @@ export default async function ManagePage({
                       says whether that is even on offer.
                     */}
                     {booking.canReschedule && (
-                      <Link
+                      <ButtonLink
                         href={`/manage/reschedule/${booking.bookingReference}`}
-                        className="border border-line px-4 py-2 text-sm transition-colors hover:border-accent"
+                        variant="secondary"
                       >
                         Move to another date
-                      </Link>
+                      </ButtonLink>
                     )}
                   </div>
                 )}

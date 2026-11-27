@@ -1,10 +1,10 @@
 'use client'
 
 import { useActionState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Callout } from '@/components/ui/callout'
+import { Field, TextareaField } from '@/components/ui/field'
 import { createBooking, type CheckoutState } from './actions'
-
-const FIELD =
-  'mt-2 w-full border border-line bg-background px-3 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 export function CheckoutForm({ selection }: { selection: string }) {
   const [state, action, pending] = useActionState<CheckoutState, FormData>(
@@ -24,25 +24,33 @@ export function CheckoutForm({ selection }: { selection: string }) {
 
   if (state.status === 'booked') {
     return (
-      <div className="border border-line bg-surface p-8">
-        <p className="eyebrow text-accent">Confirmed</p>
-        <h2 className="mt-3 font-display text-3xl">You're booked.</h2>
-        <p className="mt-3 text-sm leading-relaxed text-muted">
+      <Callout
+        tone="positive"
+        eyebrow="Confirmed"
+        title="You're booked."
+        role="status"
+        className="p-8"
+      >
+        <p className="leading-relaxed">
           {state.requiresApproval
             ? 'Your request is with the crew — they will confirm shortly.'
             : 'A confirmation is on its way to your inbox.'}
         </p>
-        <dl className="mt-6 space-y-2 border-t border-line pt-5 text-sm">
+        <dl className="mt-6 space-y-2 border-t border-line/60 pt-5">
           <div className="flex justify-between gap-4">
-            <dt className="text-muted">Booking reference</dt>
-            <dd className="tabular font-medium">{state.bookingReference}</dd>
+            <dt>Booking reference</dt>
+            <dd className="tabular font-medium text-foreground">
+              {state.bookingReference}
+            </dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-muted">Order reference</dt>
-            <dd className="tabular font-medium">{state.orderReference}</dd>
+            <dt>Order reference</dt>
+            <dd className="tabular font-medium text-foreground">
+              {state.orderReference}
+            </dd>
           </div>
         </dl>
-      </div>
+      </Callout>
     )
   }
 
@@ -53,44 +61,53 @@ export function CheckoutForm({ selection }: { selection: string }) {
       <h2 className="font-display text-2xl">Who's sailing?</h2>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
-        <label className="block">
-          <span className="eyebrow text-muted">First name</span>
-          <input name="firstName" defaultValue={typed?.firstName ?? ''} required autoComplete="given-name" className={FIELD} />
-        </label>
-        <label className="block">
-          <span className="eyebrow text-muted">Last name</span>
-          <input name="lastName" defaultValue={typed?.lastName ?? ''} required autoComplete="family-name" className={FIELD} />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="eyebrow text-muted">Email</span>
-          <input name="email" defaultValue={typed?.email ?? ''} type="email" required autoComplete="email" className={FIELD} />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="eyebrow text-muted">Phone (optional)</span>
-          <input name="phone" defaultValue={typed?.phone ?? ''} type="tel" autoComplete="tel" className={FIELD} />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="eyebrow text-muted">Anything we should know? (optional)</span>
-          <textarea name="specialRequests" rows={3} defaultValue={typed?.specialRequests ?? ''} className={FIELD} />
-        </label>
+        <Field
+          label="First name"
+          name="firstName"
+          defaultValue={typed?.firstName ?? ''}
+          required autoComplete="given-name"
+        />
+        <Field
+          label="Last name"
+          name="lastName"
+          defaultValue={typed?.lastName ?? ''}
+          required autoComplete="family-name"
+        />
+        <Field
+          className="sm:col-span-2"
+          label="Email"
+          name="email"
+          type="email"
+          defaultValue={typed?.email ?? ''}
+          required
+          autoComplete="email"
+        />
+        <Field
+          className="sm:col-span-2"
+          label="Phone (optional)"
+          name="phone"
+          type="tel"
+          defaultValue={typed?.phone ?? ''}
+          autoComplete="tel"
+        />
+        <TextareaField
+          className="sm:col-span-2"
+          label="Anything we should know? (optional)"
+          name="specialRequests"
+          rows={3}
+          defaultValue={typed?.specialRequests ?? ''}
+        />
       </div>
 
       {state.status === 'error' && (
-        <p
-          role="alert"
-          className="mt-5 border border-accent/40 bg-accent/10 px-4 py-3 text-sm"
-        >
+        <Callout role="alert" className="mt-5">
           {state.message}
-        </p>
+        </Callout>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-6 w-full bg-accent px-4 py-3.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
+      <Button type="submit" size="lg" block disabled={pending} className="mt-6">
         {pending ? 'Booking…' : 'Confirm booking'}
-      </button>
+      </Button>
       <p className="mt-3 text-center text-xs text-muted">
         You will not be charged on this page.
       </p>

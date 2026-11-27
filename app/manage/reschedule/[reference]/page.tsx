@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ButtonLink } from '@/components/ui/button'
 import { notFound } from 'next/navigation'
 import { orgDateTimeToUtc } from '@bookwithkong/storefront'
 import { kongLive, PRODUCT_QUERY } from '@/lib/kong'
@@ -53,12 +54,9 @@ export default async function ReschedulePage({
           <p className="mt-3 text-sm text-muted">
             Please contact us and we'll sort it out with you directly.
           </p>
-          <Link
-            href="/manage"
-            className="mt-8 inline-block bg-accent px-6 py-3 text-sm font-medium text-accent-foreground"
-          >
+          <ButtonLink href="/manage" size="lg" className="mt-8">
             Back to my booking
-          </Link>
+          </ButtonLink>
         </main>
         <SiteFooter />
       </>

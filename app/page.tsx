@@ -9,6 +9,8 @@ import {
   type ProductSummary,
 } from '@/lib/kong'
 import { SiteFooter, SiteHeader } from '@/components/site-chrome'
+import { buttonClass } from '@/components/ui/button'
+import { Reveal } from '@/components/ui/reveal'
 
 /**
  * The catalogue, rendered on the server.
@@ -64,7 +66,8 @@ export default async function HomePage() {
           <img
             src={hero.heroImageUrl}
             alt=""
-            className="absolute inset-0 -z-10 size-full object-cover"
+            // A 20s, 4% drift. Slow enough to be felt rather than seen.
+            className="drift absolute inset-0 -z-10 size-full object-cover"
           />
         )}
         {/*
@@ -94,7 +97,7 @@ export default async function HomePage() {
           </p>
           <a
             href="#fleet"
-            className="rise mt-8 inline-flex items-center gap-2 bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className={buttonClass({ size: 'lg', className: 'rise mt-8' })}
             style={{ animationDelay: '240ms' }}
           >
             See the fleet
@@ -107,8 +110,12 @@ export default async function HomePage() {
 
         <div className="mt-12 space-y-20 lg:space-y-28">
           {products.map((product, i) => (
+            // Revealed on scroll, staggered a little so the two blocks do
+            // not arrive in lockstep. The hidden state lives in CSS so a
+            // reduced-motion preference shows them immediately rather
+            // than leaving them invisible.
+            <Reveal key={product.productCode} delay={i * 90}>
             <article
-              key={product.productCode}
               className="grid items-center gap-8 lg:grid-cols-2 lg:gap-14"
             >
               {/*
@@ -129,12 +136,14 @@ export default async function HomePage() {
                   public and you have listed the host.
                 */}
                 {product.heroImageUrl ? (
-                  <img
-                    src={product.heroImageUrl}
-                    alt=""
-                    className="aspect-[4/3] w-full object-cover"
-                    loading={i === 0 ? undefined : 'lazy'}
-                  />
+                  <div className="overflow-hidden">
+                    <img
+                      src={product.heroImageUrl}
+                      alt=""
+                      className="aspect-[4/3] w-full object-cover transition-transform duration-700 ease-out hover:scale-[1.03]"
+                      loading={i === 0 ? undefined : 'lazy'}
+                    />
+                  </div>
                 ) : (
                   <div className="aspect-[4/3] w-full bg-line" />
                 )}
@@ -214,6 +223,7 @@ export default async function HomePage() {
                 </div>
               </div>
             </article>
+            </Reveal>
           ))}
         </div>
       </main>
@@ -233,7 +243,7 @@ export default async function HomePage() {
           </p>
           <a
             href="#fleet"
-            className="shrink-0 bg-accent px-7 py-3.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className={buttonClass({ size: 'lg', className: 'shrink-0' })}
           >
             Check dates
           </a>

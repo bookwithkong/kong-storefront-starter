@@ -1,6 +1,10 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { ButtonLink } from '@/components/ui/button'
+import { Callout } from '@/components/ui/callout'
+import { StickyBar } from '@/components/ui/sticky-bar'
 import { reschedule, type RescheduleState } from './actions'
 
 export interface SlotChoice {
@@ -26,16 +30,11 @@ export function ReschedulePicker({
 
   if (state.ok) {
     return (
-      <div className="border border-accent/40 bg-accent/10 p-8">
-        <p className="eyebrow text-accent">Moved</p>
-        <h2 className="mt-2 font-display text-2xl">{state.message}</h2>
-        <a
-          href="/manage"
-          className="mt-6 inline-block bg-accent px-6 py-3 text-sm font-medium text-accent-foreground"
-        >
+      <Callout tone="positive" eyebrow="Moved" title={state.message} role="status">
+        <ButtonLink href="/manage" className="mt-4">
           Back to my booking
-        </a>
-      </div>
+        </ButtonLink>
+      </Callout>
     )
   }
 
@@ -49,7 +48,8 @@ export function ReschedulePicker({
       <input type="hidden" name="startDateTime" value={chosen?.startDateTime ?? ''} />
       <input type="hidden" name="endDateTime" value={chosen?.endDateTime ?? ''} />
 
-      <div className="space-y-6">
+      {/* Room for the sticky bar, so the last day is never behind it. */}
+      <div className="space-y-6 pb-28">
         {days.map(day => (
           <div key={day}>
             <h3 className="eyebrow text-muted">{day}</h3>
@@ -60,18 +60,20 @@ export function ReschedulePicker({
                   const active = chosen?.id === slot.id
                   return (
                     <li key={slot.id}>
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         aria-pressed={active}
                         onClick={() => setChosen(slot)}
-                        className={`tabular border px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                        className={
                           active
-                            ? 'border-accent bg-accent/10'
-                            : 'border-line hover:border-accent/60'
-                        }`}
+                            ? 'tabular border-accent bg-accent/10 text-foreground'
+                            : 'tabular'
+                        }
                       >
                         {slot.label}
-                      </button>
+                      </Button>
                     </li>
                   )
                 })}
@@ -81,22 +83,27 @@ export function ReschedulePicker({
       </div>
 
       {state.message && !state.ok && (
-        <p role="alert" className="mt-6 border border-line bg-surface px-4 py-3 text-sm">
+        <Callout role="alert" className="mt-6">
           {state.message}
-        </p>
+        </Callout>
       )}
 
-      <button
-        type="submit"
-        disabled={pending || !chosen}
-        className="mt-8 bg-accent px-6 py-3.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
-        {pending
-          ? 'Moving…'
-          : chosen
-            ? `Move to ${chosen.day}, ${chosen.label}`
-            : 'Pick a new departure'}
-      </button>
+      {/*
+        The confirm lives in the bar, not at the foot of a forty-item
+        list. It also restates the choice, so nobody has to scroll back
+        up to check what they picked.
+      */}
+      <StickyBar show={Boolean(chosen)}>
+        <p className="min-w-0 text-sm">
+          <span className="block text-xs text-muted">Moving to</span>
+          <span className="tabular truncate font-medium">
+            {chosen ? `${chosen.day}, ${chosen.label}` : ''}
+          </span>
+        </p>
+        <Button type="submit" size="lg" disabled={pending} className="shrink-0">
+          {pending ? 'Moving…' : 'Confirm move'}
+        </Button>
+      </StickyBar>
     </form>
   )
 }

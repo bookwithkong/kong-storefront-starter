@@ -1,15 +1,15 @@
 'use client'
 
 import { useActionState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Callout } from '@/components/ui/callout'
+import { Field } from '@/components/ui/field'
 import {
   cancelBooking,
   signIn,
   type CancelState,
   type SignInState,
 } from './actions'
-
-const FIELD =
-  'mt-2 w-full border border-line bg-background px-3 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 export function SignInForm() {
   const [state, action, pending] = useActionState<SignInState, FormData>(
@@ -25,35 +25,25 @@ export function SignInForm() {
       </p>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
-        <label className="block">
-          <span className="eyebrow text-muted">Surname</span>
-          <input name="lastName" required autoComplete="family-name" className={FIELD} />
-        </label>
-        <label className="block">
-          <span className="eyebrow text-muted">Reference</span>
-          <input
-            name="reference"
-            required
-            placeholder="ORD-ABC123"
-            autoCapitalize="characters"
-            className={FIELD}
-          />
-        </label>
+        <Field label="Surname" name="lastName" required autoComplete="family-name" />
+        <Field
+          label="Reference"
+          name="reference"
+          required
+          placeholder="ORD-ABC123"
+          autoCapitalize="characters"
+        />
       </div>
 
       {state.error && (
-        <p role="alert" className="mt-5 border border-accent/40 bg-accent/10 px-4 py-3 text-sm">
+        <Callout role="alert" className="mt-5">
           {state.error}
-        </p>
+        </Callout>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-6 w-full bg-accent px-4 py-3.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
+      <Button type="submit" size="lg" block disabled={pending} className="mt-6">
         {pending ? 'Looking…' : 'Find booking'}
-      </button>
+      </Button>
     </form>
   )
 }
@@ -80,13 +70,9 @@ export function CancelButton({
         so the control disappears for the same reasons the server would
         refuse, instead of inviting a click that fails.
       */}
-      <button
-        type="submit"
-        disabled={pending || !canCancel}
-        className="border border-line px-4 py-2 text-sm transition-colors hover:border-accent disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
+      <Button type="submit" variant="secondary" disabled={pending || !canCancel}>
         {pending ? 'Cancelling…' : 'Cancel booking'}
-      </button>
+      </Button>
       {state.message && (
         <p
           role="status"

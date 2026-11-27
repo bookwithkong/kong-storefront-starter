@@ -102,10 +102,49 @@ body {
 .rise { animation: rise 600ms cubic-bezier(0.22, 1, 0.36, 1) both }
 
 /*
+ * Scroll-revealed content.
+ *
+ * The hidden state and the animation are SEPARATE, and the reduced-motion
+ * block below resets the hidden state as well as the animation. That is
+ * the whole trap: an element parked at `opacity: 0` whose animation has
+ * been disabled is not "unanimated", it is invisible — a reduced-motion
+ * preference would silently blank half the page.
+ */
+.reveal { opacity: 0 }
+.reveal[data-visible='true'] {
+  animation: rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* The action bar that appears once a choice has been made. */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(100%) }
+  to   { opacity: 1; transform: none }
+}
+.slide-up { animation: slide-up 320ms cubic-bezier(0.22, 1, 0.36, 1) both }
+
+/*
+ * A slow drift on hero imagery.
+ *
+ * Twenty seconds and 4% of scale — far too slow to read as movement,
+ * which is the point. It should feel like the photograph is breathing,
+ * not like something is sliding about behind the text.
+ */
+@keyframes drift {
+  from { transform: scale(1) }
+  to   { transform: scale(1.04) }
+}
+.drift { animation: drift 20s ease-out both }
+
+/*
  * One deliberate motion moment, on the hero only. Everything else on the
  * page is still. Respect the system preference rather than overriding it.
  */
 @media (prefers-reduced-motion: reduce) {
-  .rise, .fade-in, .acc-open, .acc-close { animation: none }
+  .rise, .fade-in, .acc-open, .acc-close, .slide-up, .drift { animation: none }
+  /*
+    Both halves. Killing the animation alone would leave every revealed
+    element stuck at opacity 0 — the content would simply never appear.
+  */
+  .reveal, .reveal[data-visible='true'] { opacity: 1; animation: none }
   html { scroll-behavior: auto }
 }
