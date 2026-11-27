@@ -1,6 +1,5 @@
 import Link from 'next/link'
-
-const ORG_NAME = 'Kong Sunset Cruise'
+import { site } from '@/lib/site'
 
 export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   /*
@@ -18,7 +17,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Link href="/" className="font-display text-lg tracking-tight">
-          {ORG_NAME}
+          {site.name}
         </Link>
         <Link
           href="/#fleet"
@@ -38,7 +37,7 @@ export function SiteFooter() {
     <footer className="mt-24 border-t border-line">
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-10 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
         <p>
-          {ORG_NAME} · Langkawi, Malaysia
+          {site.name} · Langkawi, Malaysia
         </p>
         <p>
           <Link href="/manage" className="underline underline-offset-4 hover:text-accent">

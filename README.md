@@ -43,6 +43,67 @@ Under **Settings → Organization settings → Advanced → Features**, turn on
 bookings. With it off, `/manage` still shows the booking but the controls
 are correctly disabled.
 
+## Make it yours
+
+Start with **`lib/site.ts`**. It holds the name, the description, the
+location and every sentence on the front page — words only, no wiring.
+Change them and the site is yours. Each one also reads an environment
+variable first, so one deployment can be rebranded without a code change.
+
+Then `app/globals.css` for colour and type, and `app/icon.svg` for the
+favicon. See *Restyling it* below.
+
+## Deploying it
+
+It is an ordinary Next.js app, so anywhere that runs Next will do. Three
+that need no configuration beyond environment variables:
+
+### Render
+
+A `render.yaml` ships in this repo, so:
+
+1. Push this to your own GitHub repository.
+2. In Render, **New → Blueprint**, point it at the repo, and approve.
+3. Set the environment variables from the table above in the dashboard.
+
+Render builds with `npm run build` and serves with `npm run start`. The
+free instance type sleeps after inactivity and takes a few seconds to
+wake, which is fine for a soft launch and not for a real storefront —
+move to a paid instance before you advertise it.
+
+### Vercel
+
+`npx vercel` from this directory, or import the repository at
+vercel.com/new. Next.js is Vercel's own framework, so nothing needs
+configuring; add the environment variables and deploy.
+
+### Netlify, Railway, Fly, your own box
+
+All fine. The only requirements are Node 20+, `npm run build`, and
+`npm run start`.
+
+### After it is up — two things, in this order
+
+**1. Declare the deployed origin in Kong.** Website → Custom site, exactly
+as it appears in the browser (`https://tours.example.com`, no trailing
+slash). Until you do, the booking panel gets a 403 from the guest's
+browser and the page looks broken for everyone but you.
+
+**2. Set `NEXT_PUBLIC_SITE_ORIGIN` to the same value.** It is the
+post-payment return destination, and a mismatch does not degrade quietly
+— the booking fails.
+
+A useful order of operations: deploy, copy the real URL, declare it in
+Kong, set the variable, redeploy.
+
+### Your own domain
+
+Point a CNAME at your host and add the domain there — all three above
+issue certificates automatically. Then **redo both steps above with the
+new origin**, because `https://tours.example.com` and
+`https://my-site.onrender.com` are different origins and Kong knows the
+difference.
+
 ## How it is laid out
 
 ```

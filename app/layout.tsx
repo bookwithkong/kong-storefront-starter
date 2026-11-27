@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Fraunces, IBM_Plex_Sans } from 'next/font/google'
 import Script from 'next/script'
+import { site } from '@/lib/site'
 import './globals.css'
 
 /*
@@ -37,11 +38,10 @@ const STOREFRONT_ORIGIN = process.env.NEXT_PUBLIC_KONG_STOREFRONT_ORIGIN
 
 export const metadata: Metadata = {
   title: {
-    default: 'Kong Sunset Cruise',
-    template: '%s · Kong Sunset Cruise',
+    default: site.name,
+    template: `%s · ${site.name}`,
   },
-  description:
-    'Private yacht cruises on the Andaman Sea, departing Langkawi at golden hour.',
+  description: site.description,
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

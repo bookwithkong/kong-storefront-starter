@@ -9,6 +9,7 @@ import {
   type ProductSummary,
 } from '@/lib/kong'
 import { SiteFooter, SiteHeader } from '@/components/site-chrome'
+import { site } from '@/lib/site'
 import { buttonClass } from '@/components/ui/button'
 import { Reveal } from '@/components/ui/reveal'
 
@@ -81,32 +82,31 @@ export default async function HomePage() {
         />
 
         <div className="mx-auto w-full max-w-6xl px-6 pb-16 pt-32 lg:pb-24">
-          <p className="eyebrow rise text-on-deep-muted">Langkawi · Andaman Sea</p>
+          <p className="eyebrow rise text-on-deep-muted">{site.hero.eyebrow}</p>
           <h1
             className="rise mt-4 max-w-2xl font-display text-[clamp(2.5rem,7vw,4.5rem)] leading-[1.02] tracking-tight text-balance text-on-deep"
             style={{ animationDelay: '80ms' }}
           >
-            The sea turns gold for about forty minutes.
+            {site.hero.headline}
           </h1>
           <p
             className="rise mt-5 max-w-md text-[0.9375rem] leading-relaxed text-on-deep-muted"
             style={{ animationDelay: '160ms' }}
           >
-            We sail out to meet it. Private yachts, a professional crew, and
-            the limestone karsts on the way back in.
+            {site.hero.subhead}
           </p>
           <a
             href="#fleet"
             className={buttonClass({ size: 'lg', className: 'rise mt-8' })}
             style={{ animationDelay: '240ms' }}
           >
-            See the fleet
+            {site.hero.cta}
           </a>
         </div>
       </section>
 
       <main id="fleet" className="mx-auto max-w-6xl px-6 py-20 lg:py-28">
-        <p className="eyebrow text-accent">Two ways to sail</p>
+        <p className="eyebrow text-accent">{site.catalogueEyebrow}</p>
 
         <div className="mt-12 space-y-20 lg:space-y-28">
           {products.map((product, i) => (
@@ -239,13 +239,13 @@ export default async function HomePage() {
       <section className="bg-deep">
         <div className="mx-auto flex max-w-6xl flex-col items-start gap-8 px-6 py-20 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-md font-display text-[clamp(1.5rem,3vw,2.25rem)] leading-tight text-balance text-on-deep">
-            The light does not wait. Neither should the booking.
+            {site.closing.headline}
           </p>
           <a
             href="#fleet"
             className={buttonClass({ size: 'lg', className: 'shrink-0' })}
           >
-            Check dates
+            {site.closing.cta}
           </a>
         </div>
       </section>
