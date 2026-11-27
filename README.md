@@ -238,11 +238,44 @@ app/
 components/
   ui/                         button, field, callout, reveal, sticky bar
   booking-panel.tsx           the only component that talks to Kong from the browser
+  gallery.tsx                 the photographs, and the lightbox they open in
   itinerary.tsx faqs.tsx prose.tsx
 lib/
   kong.ts                     TWO clients — see below
   guest-session.ts            the guest's token, in an httpOnly cookie
 ```
+
+### What is yours and what is the package's
+
+Everything above is yours to change. The parts whose shape is **not**
+negotiable — talking to Kong, and the booking state machine — come from
+[`@bookwithkong/storefront`](https://www.npmjs.com/package/@bookwithkong/storefront),
+and this repository is mostly a demonstration of how to hold it.
+
+| From the package | Used here |
+|---|---|
+| `createStorefrontClient` | `lib/kong.ts`, and again in `components/booking-panel.tsx` for the browser |
+| `useBooking` (from `@bookwithkong/storefront/react`) | the whole booking panel — availability, quotes, the Book Now label |
+| `resolveBookingSelection` | narrowing a product to the selected option's tiers, with your own fields still typed |
+| `getCalendarDate`, `getCurrentYearMonthInTimezone`, `isViewingCurrentMonth` | the calendar, so dates stay in the operator's timezone |
+| `guest.login`, `guest.session(token)` | `app/manage/` — lookup, cancel, reschedule. Always reached through `kongLive`, never the cached client |
+
+**Read the package's own README on npm.** It is the reference for this
+template and it is long on purpose — the client and its errors,
+idempotency on order creation, finishing on your own site, `kong.guest`,
+`useBooking`, and why you render the price rows rather than rebuilding
+them. Nothing in that contract is restated here, because a second copy of
+an API reference is a copy that goes out of date.
+
+Two consequences worth knowing before you reach for something else:
+
+- **You rarely need to write GraphQL.** The package ships documents for
+  availability, quotes, order creation and everything under `kong.guest`.
+  The queries in `lib/kong.ts` exist only because the *catalogue* is yours
+  to shape — which fields a card shows is a design decision, not a
+  protocol one.
+- **The version is pinned in `package.json`.** Check its changelog before
+  bumping; `useBooking` returns the state this panel is built around.
 
 ### Two clients, on purpose
 
