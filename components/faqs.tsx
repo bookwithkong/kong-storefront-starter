@@ -27,7 +27,7 @@ export function Faqs({ items }: { items: ReadonlyArray<Faq> }) {
             className="border-b border-line"
           >
             <Accordion.Header>
-              <Accordion.Trigger className="group flex w-full items-center justify-between gap-4 py-4 text-left text-[0.9375rem] font-medium transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+              <Accordion.Trigger className="group flex w-full items-center justify-between gap-4 py-4 text-left text-[0.9375rem] font-medium transition-colors hover:text-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent">
                 {faq.question}
                 <span
                   aria-hidden

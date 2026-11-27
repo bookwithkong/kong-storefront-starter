@@ -26,7 +26,7 @@ const BookingPanel = dynamic(
   {
     ssr: false,
     loading: () => (
-      <aside className="h-80 animate-pulse border border-line bg-surface" />
+      <aside className="surface-panel h-80 rounded-panel border border-line" />
     ),
   }
 )

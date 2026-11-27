@@ -37,6 +37,37 @@ export interface CalendarProps {
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
+/**
+ * The calendar's silhouette, while availability is being fetched.
+ *
+ * Six rows because that is the most any month needs, so the panel is the
+ * same height before and after the answer arrives. The version this
+ * replaced was a single centred line of text, which collapsed the panel
+ * by roughly three hundred pixels on every date change and threw the
+ * rest of the page upwards — the jump read as the site breaking.
+ */
+export function CalendarSkeleton() {
+  return (
+    <div aria-hidden>
+      <div className="flex items-center justify-between gap-2">
+        <span className="skeleton size-6" />
+        <span className="skeleton h-4 w-32" />
+        <span className="skeleton size-6" />
+      </div>
+      <div className="mt-4 grid grid-cols-7 gap-1">
+        {Array.from({ length: 7 }, (_, i) => (
+          <span key={`h-${i}`} className="skeleton mx-auto h-2.5 w-2.5" />
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {Array.from({ length: 42 }, (_, i) => (
+          <span key={i} className="skeleton aspect-square w-full opacity-60" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const pad = (n: number) => String(n).padStart(2, '0')
 const key = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`
 
@@ -85,7 +116,7 @@ export function Calendar({
           arrows alter content far from themselves, which is otherwise
           silent.
         */}
-        <p aria-live="polite" className="text-sm font-medium">
+        <p aria-live="polite" className="text-base font-medium">
           {monthLabel}
         </p>
         <button
@@ -101,7 +132,7 @@ export function Calendar({
 
       <div
         aria-hidden
-        className="mt-4 grid grid-cols-7 gap-1 text-center text-[0.625rem] uppercase tracking-wider text-muted"
+        className="mt-4 grid grid-cols-7 gap-1 text-center text-[0.75rem] uppercase tracking-wider text-muted"
       >
         {WEEKDAYS.map(d => (
           <span key={d}>{d.charAt(0)}</span>
@@ -128,10 +159,14 @@ export function Calendar({
               aria-label={date}
               onClick={() => onSelect(date)}
               className={cn(
-                'tabular aspect-square text-sm transition-all duration-150',
-                'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+                // The site's easing, over 220ms rather than 150ms: a day
+                // that eases into its selected fill reads as a choice
+                // being accepted; one that snaps reads as a radio button.
+                'tabular aspect-square rounded-control text-[0.9375rem]',
+                'transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
                 isSelected
-                  ? 'bg-accent font-medium text-accent-foreground'
+                  ? 'bg-accent font-medium text-accent-foreground shadow-raised'
                   : available
                     ? 'text-foreground hover:bg-accent/15'
                     : // Unavailable days stay VISIBLE but unmistakably

@@ -37,7 +37,13 @@ export function StickyBar({
         className="h-16 bg-gradient-to-t from-background to-transparent"
       />
       <div className="pointer-events-auto border-t border-line bg-surface/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {/*
+          `pr-20` on small screens, not `px-6` all round. The operator's
+          chat assistant is a fixed bubble in the bottom-right corner, and
+          without this the bar's own action sits underneath it — the one
+          button on the bar becomes the one button you cannot press.
+        */}
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 py-4 pl-6 pr-20 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pr-6">
           {children}
         </div>
       </div>

@@ -43,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Lavish review artifacts — local working files, not part of the template.
+.lavish/
