@@ -50,9 +50,9 @@ export default async function ReschedulePage({
       <>
         <SiteHeader />
         <main className="mx-auto max-w-2xl px-6 py-20 text-center">
-          <h1 className="font-display text-3xl">This booking can't be moved</h1>
+          <h1 className="font-display text-3xl">This booking can&apos;t be moved</h1>
           <p className="mt-3 text-sm text-muted">
-            Please contact us and we'll sort it out with you directly.
+            Please contact us and we&apos;ll sort it out with you directly.
           </p>
           <ButtonLink href="/manage" size="lg" className="mt-8">
             Back to my booking
@@ -159,7 +159,7 @@ export default async function ReschedulePage({
           {slots.length === 0 ? (
             <p className="text-sm text-muted">
               Nothing else is available in the next two months. Please get in
-              touch and we'll find you a date.
+              touch and we&apos;ll find you a date.
             </p>
           ) : (
             <ReschedulePicker

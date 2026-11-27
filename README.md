@@ -104,6 +104,25 @@ new origin**, because `https://tours.example.com` and
 `https://my-site.onrender.com` are different origins and Kong knows the
 difference.
 
+## Changing it with an AI agent
+
+Expected, and the repo is set up for it. **`AGENTS.md` is the brief** —
+Claude Code, Cursor and the rest read it automatically. It records the
+rules that are expensive to rediscover: never re-add the server's price
+rows, never cache a guest's own data, never parse a slot time as an
+instant, never render a control without asking the booking first.
+
+Point your agent at it and ask for what you want. Then:
+
+```bash
+npm run verify     # typecheck, lint, production build
+```
+
+Treat that as the bar, not a rendering dev server. Several of the rules
+in `AGENTS.md` fail only in a production build, only for a second
+visitor, or only in another timezone — a page that looks right on your
+machine is not evidence.
+
 ## How it is laid out
 
 ```

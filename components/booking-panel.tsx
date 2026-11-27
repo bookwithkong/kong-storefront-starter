@@ -105,7 +105,15 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
     [selectedOption, product]
   )
 
-  const slots = booking.availabilityResponse?.availableStartTimes ?? []
+  /*
+    Memoised because `days` below depends on it. `x ?? []` builds a NEW
+    array every render, so without this the memo never hits and the whole
+    slot list is regrouped on every keystroke elsewhere in the panel.
+  */
+  const slots = useMemo(
+    () => booking.availabilityResponse?.availableStartTimes ?? [],
+    [booking.availabilityResponse]
+  )
 
   /*
    * Slot times are UTC instants. They must be rendered in the OPERATOR's
@@ -114,19 +122,6 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
    * `toLocaleString()` with no timezone silently shows them the wrong
    * departure time.
    */
-  const slotFormat = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        hour: 'numeric',
-        minute: '2-digit',
-        timeZone: ORGANIZATION.timezone ?? 'UTC',
-      }),
-    []
-  )
-
   const timezone = ORGANIZATION.timezone ?? 'UTC'
 
   /*

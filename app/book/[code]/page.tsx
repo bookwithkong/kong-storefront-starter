@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { kong, money, PRODUCT_QUERY, PRODUCTS_QUERY, type ProductSummary } from '@/lib/kong'
+import { kong, PRODUCT_QUERY, PRODUCTS_QUERY, type ProductSummary } from '@/lib/kong'
 import { BookingPanelClient } from '@/components/booking-panel-client'
 import type { StarterProduct } from '@/components/booking-panel'
 import { SiteFooter, SiteHeader } from '@/components/site-chrome'

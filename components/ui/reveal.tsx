@@ -32,10 +32,17 @@ export function Reveal({
     const node = ref.current
     if (!node) return
 
-    // No observer: show it. Better a missing flourish than hidden content.
+    /*
+      No observer: show it. Better a missing flourish than hidden content.
+
+      Scheduled rather than set synchronously — a setState during the
+      effect itself re-renders before the browser has painted, and React
+      flags it as a cascading render. A task defers it to the next tick,
+      which is soon enough for something nobody can see yet.
+    */
     if (typeof IntersectionObserver === 'undefined') {
-      setVisible(true)
-      return
+      const timer = setTimeout(() => setVisible(true), 0)
+      return () => clearTimeout(timer)
     }
 
     const observer = new IntersectionObserver(

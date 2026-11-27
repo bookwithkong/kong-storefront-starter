@@ -58,7 +58,7 @@ export function CheckoutForm({ selection }: { selection: string }) {
     <form action={action} className="border border-line bg-surface p-8">
       <input type="hidden" name="selection" value={selection} />
 
-      <h2 className="font-display text-2xl">Who's sailing?</h2>
+      <h2 className="font-display text-2xl">Who&apos;s sailing?</h2>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
         <Field
