@@ -17,7 +17,7 @@ import { cn } from '@/lib/cn'
  * border colour AND a ring, so it is unmistakable without being loud.
  */
 const CONTROL =
-  'mt-2.5 w-full border border-line bg-background px-4 py-3 text-[0.9375rem] ' +
+  'mt-2.5 w-full rounded-control border border-line bg-background px-4 py-3 text-base ' +
   'transition-[border-color,box-shadow] duration-200 placeholder:text-muted/50 ' +
   'hover:border-muted/40 ' +
   'focus:border-accent focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_18%,transparent)] ' +
@@ -63,7 +63,9 @@ export function Field({
     <label className={cn('block', className)}>
       <Label>{label}</Label>
       <input {...props} className={cn(CONTROL, inputClassName)} />
-      {hint && <span className="mt-1.5 block text-xs text-muted">{hint}</span>}
+      {hint && (
+        <span className="mt-1.5 block text-[0.8125rem] text-muted">{hint}</span>
+      )}
     </label>
   )
 }

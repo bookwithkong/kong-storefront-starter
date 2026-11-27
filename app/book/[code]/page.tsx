@@ -7,6 +7,7 @@ import { SiteFooter, SiteHeader } from '@/components/site-chrome'
 import { Itinerary } from '@/components/itinerary'
 import { Faqs } from '@/components/faqs'
 import { Prose } from '@/components/prose'
+import { Gallery } from '@/components/gallery'
 
 /*
  * This route reads `params` to decide what to fetch, so Next cannot stream
@@ -73,7 +74,7 @@ function Included({
       <h3 className="eyebrow text-muted">{title}</h3>
       <ul className="mt-4 space-y-3">
         {items.map(item => (
-          <li key={item} className="flex gap-3 text-[0.9375rem] leading-relaxed">
+          <li key={item} className="flex gap-3 text-base leading-relaxed">
             <span
               aria-hidden
               className={`mt-[0.3125rem] shrink-0 ${included ? 'text-accent' : 'text-muted'}`}
@@ -152,7 +153,9 @@ export default async function BookPage({
           <img
             src={product.heroImageUrl}
             alt=""
-            className="absolute inset-0 -z-10 size-full object-cover"
+            // The same 20s, 4% drift the home hero uses. It was missing
+            // here, which made the two pages feel like different sites.
+            className="drift absolute inset-0 -z-10 size-full object-cover"
           />
         )}
         <div
@@ -179,7 +182,7 @@ export default async function BookPage({
 
       <main className="mx-auto max-w-6xl px-6 py-16 lg:py-20">
         <div className="grid gap-x-16 gap-y-16 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-          <div className="min-w-0 space-y-16">
+          <div className="min-w-0 space-y-14">
             {product.description && (
               <section>
                 <Prose text={product.description} />
@@ -196,20 +199,23 @@ export default async function BookPage({
             )}
 
             {gallery.length > 0 && (
-              <section>
-                <h2 className="font-display text-2xl">On board</h2>
-                <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {gallery.map(img => (
-                    <li key={img.url}>
-                      <img
-                        src={img.url}
-                        alt={img.alt ?? ''}
-                        className="aspect-square w-full object-cover"
-                        loading="lazy"
-                      />
-                    </li>
-                  ))}
-                </ul>
+              /*
+                `pt-12` on top of the container's rhythm, so this section
+                arrives with more room than the ones around it. A page
+                where every block is spaced identically has no peaks, and
+                the photographs are the thing worth stopping on.
+              */
+              <section className="pt-12">
+                <h2 className="font-display text-[clamp(1.75rem,3vw,2.375rem)] tracking-tight">
+                  On board
+                </h2>
+                {/*
+                  The grid and its lightbox live together in <Gallery>.
+                  It is a Client Component, so the thumbnails are still
+                  server-rendered into the HTML — only the opening is
+                  hydrated.
+                */}
+                <Gallery images={gallery} />
               </section>
             )}
 

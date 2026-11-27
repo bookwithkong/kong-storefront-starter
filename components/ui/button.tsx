@@ -19,7 +19,13 @@ type Variant = 'primary' | 'secondary' | 'ghost'
 type Size = 'sm' | 'md' | 'lg'
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 ' +
+  // `text-[0.9375rem]`, not `text-sm`. A button is a commitment; 14px made
+  // the one action on each screen smaller than the paragraph above it.
+  'inline-flex items-center justify-center gap-2 rounded-control text-[0.9375rem] font-medium ' +
+  // The same easing the rest of the site uses for motion, rather than the
+  // browser default — a button that settles reads as considered, one that
+  // snaps reads as a default control.
+  'transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ' +
   // One focus ring, defined once, so every control is reachable by keyboard
   // in the same way. Losing this on a custom button is how a site becomes
   // unusable without a mouse.
@@ -27,10 +33,18 @@ const BASE =
   'disabled:cursor-not-allowed disabled:opacity-40'
 
 const VARIANTS: Record<Variant, string> = {
+  /*
+   * The accent stays the accent. Lifting it on hover with a shadow and a
+   * touch of brightness, rather than fading it with `opacity-90`: an
+   * element that gets dimmer when you reach for it is the one state
+   * change every default button makes, and it reads as nothing happening.
+   */
   primary:
-    'bg-accent text-accent-foreground hover:opacity-90 active:scale-[0.98]',
+    'bg-accent text-accent-foreground shadow-raised ' +
+    'hover:brightness-[1.06] hover:shadow-panel active:scale-[0.98] active:brightness-100',
   secondary:
-    'border border-line bg-surface hover:border-accent/60 active:scale-[0.98]',
+    'border border-line bg-surface shadow-raised hover:border-accent/60 ' +
+    'hover:-translate-y-px active:translate-y-0 active:scale-[0.98]',
   ghost: 'text-muted hover:text-accent underline-offset-4 hover:underline',
 }
 

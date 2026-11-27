@@ -1,15 +1,13 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  CONFIG_FIELDS,
   KONG_API_ORIGIN,
   createStorefrontClient,
   getCalendarDate,
   getCurrentYearMonthInTimezone,
   isViewingCurrentMonth,
   resolveBookingSelection,
-  resolveOptionFirst,
   type BookingOptionLike,
   type BookingOrganizationLike,
   type BookingProductLike,
@@ -17,8 +15,11 @@ import {
 } from '@bookwithkong/storefront'
 import { useBooking } from '@bookwithkong/storefront/react'
 import { money, type ProductImage } from '@/lib/kong'
+import { cn } from '@/lib/cn'
 import { Button, buttonClass } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
+import { Calendar, CalendarSkeleton } from '@/components/ui/calendar'
+import { Price } from '@/components/ui/price'
+import { StickyBar } from '@/components/ui/sticky-bar'
 
 /**
  * Your product type — whatever your query selected.
@@ -99,13 +100,9 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
 
   // Derived from YOUR product, not returned by the hook — that is what
   // keeps `optionName` and the rest of your fields typed.
-  const { options, selectedOption, validPricingTiers } = useMemo(
+  const { options, validPricingTiers } = useMemo(
     () => resolveBookingSelection(product, booking.selectedOptionId),
     [product, booking.selectedOptionId]
-  )
-  const configs = useMemo(
-    () => resolveOptionFirst(selectedOption, product, CONFIG_FIELDS),
-    [selectedOption, product]
   )
 
   /*
@@ -174,37 +171,149 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
     0
   )
 
+  /*
+   * A day, spoken rather than printed.
+   *
+   * Built from the STRING's own parts into a UTC instant and formatted in
+   * UTC — never `new Date('2026-11-28')` reinterpreted locally, which is
+   * the bug this whole file is careful about. The round trip is exact
+   * because both ends agree the zone is UTC; the date never moves.
+   */
+  const spokenDate = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number)
+    if (!y || !m || !d) return iso
+    return new Intl.DateTimeFormat(undefined, {
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+    }).format(new Date(Date.UTC(y, m - 1, d)))
+  }
+
+  /*
+   * What a screen reader hears when availability changes.
+   *
+   * The calendar repaints silently: a sighted guest sees dots appear, and
+   * everyone else gets nothing at all. This replaces an `sr-only` node
+   * that was left behind from debugging and announced the literal word
+   * "true" at the end of the panel.
+   */
+  const announcement = booking.isLoadingTimeslots
+    ? 'Checking availability'
+    : guestTotal === 0
+      ? ''
+      : booking.selectedDate && timesForDay.length > 0
+        ? `${timesForDay.length} departure${timesForDay.length === 1 ? '' : 's'} on ${spokenDate(booking.selectedDate)}.`
+        : availableDates.size === 0
+          ? 'No departures this month.'
+          : `${availableDates.size} day${availableDates.size === 1 ? '' : 's'} available this month.`
+
+  /*
+   * The mobile action bar.
+   *
+   * On a phone the panel sits below the itinerary, the gallery and the
+   * FAQs — four screens before a guest meets a price. Rather than pinning
+   * the whole panel and eating the viewport they are reading with, a thin
+   * bar carries the price and a jump link once the panel scrolls away.
+   *
+   * Observed rather than measured from a scroll handler: one observer
+   * costs nothing and does not run on every frame.
+   */
+  const panelRef = useRef<HTMLElement>(null)
+  const [panelOffScreen, setPanelOffScreen] = useState(false)
+  const [pastHero, setPastHero] = useState(false)
+
+  useEffect(() => {
+    const node = panelRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') return
+
+    const observer = new IntersectionObserver(
+      entries => {
+        for (const entry of entries) setPanelOffScreen(!entry.isIntersecting)
+      },
+      { threshold: 0 }
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  /*
+   * Two conditions, not one.
+   *
+   * The panel is off-screen at the top of the page as well as at the
+   * bottom, so observing it alone would park the bar over the hero
+   * before the guest has scrolled a pixel — which is the opposite of
+   * "appears when you need it". The second signal is simply whether we
+   * have left the first screen.
+   *
+   * React bails out of a re-render when a `useState` setter is handed the
+   * value it already holds, so firing this on every scroll frame costs a
+   * comparison and nothing else.
+   */
+  useEffect(() => {
+    const onScroll = () => setPastHero(window.scrollY > window.innerHeight * 0.6)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
-    <aside className="h-fit border border-line bg-surface">
-      <div className="border-b border-line px-6 py-5">
-        {leadPrice != null && (
-          <p className="flex items-baseline gap-2">
-            <span className="text-xs text-muted">from</span>
-            <span className="tabular font-display text-3xl leading-none">
-              {money(Number(leadPrice))}
-            </span>
-          </p>
-        )}
-        <p className="mt-2 text-xs text-muted">
+    <aside
+      ref={panelRef}
+      id="book"
+      className="surface-panel h-fit scroll-mt-8 rounded-panel border border-line"
+    >
+      <div className="border-b border-line px-7 py-6">
+        <Price cents={leadPrice == null ? null : Number(leadPrice)} size="lg" />
+        <p className="mt-3 text-[0.8125rem] text-muted">
           Free to hold your place — you pay at checkout.
         </p>
       </div>
 
-      <div className="space-y-6 px-6 py-6">
+      {/*
+        The three decisions — who, when, how much — with real air between
+        them. They were `space-y-6` apart, which made the panel read as
+        one dense form rather than three short questions.
+      */}
+      <div className="space-y-8 px-7 py-7">
         {options.length > 1 && (
           <label className="block">
             <span className="eyebrow text-muted">Option</span>
-            <select
-              className="mt-2 w-full border border-line bg-background px-3 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              value={booking.selectedOptionId}
-              onChange={e => booking.setSelectedOptionId(e.target.value)}
-            >
-              {options.map(o => (
-                <option key={o.id} value={o.id}>
-                  {o.optionName}
-                </option>
-              ))}
-            </select>
+            {/*
+              `appearance-none` with our own chevron, rather than a custom
+              listbox. A native <select> keeps the platform's keyboard
+              handling, its typeahead, and the full-height wheel a phone
+              shows instead of a cramped dropdown — none of which a div
+              gets back without a lot of code and some of which it never
+              does. Only the closed state was ever off-brand, and that is
+              the part that can be styled.
+            */}
+            <div className="relative mt-2.5">
+              <select
+                className="w-full appearance-none rounded-control border border-line bg-background py-3 pl-4 pr-10 text-base transition-[border-color,box-shadow] duration-200 hover:border-muted/40 focus:border-accent focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_18%,transparent)] focus:outline-none"
+                value={booking.selectedOptionId}
+                onChange={e => booking.setSelectedOptionId(e.target.value)}
+              >
+                {options.map(o => (
+                  <option key={o.id} value={o.id}>
+                    {o.optionName}
+                  </option>
+                ))}
+              </select>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted"
+              >
+                <svg width="11" height="7" viewBox="0 0 11 7" fill="none">
+                  <path
+                    d="M1 1l4.5 4.5L10 1"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </div>
           </label>
         )}
 
@@ -230,31 +339,37 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
                   className="flex items-center justify-between gap-4"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm">{tier.name}</p>
+                    <p className="truncate text-base">{tier.name}</p>
                     {tier.priceCents != null && (
-                      <p className="tabular text-xs text-muted">
+                      <p className="tabular text-[0.8125rem] text-muted">
                         {money(Number(tier.priceCents))} each
                       </p>
                     )}
                   </div>
-                  <div className="flex shrink-0 items-center border border-line">
+                  {/*
+                    A pill, and big enough to hit. The square-cornered
+                    version was 1.5rem tall with 12px glyphs — under the
+                    44px touch target everyone agrees on, and the one
+                    control a guest uses before anything else.
+                  */}
+                  <div className="flex shrink-0 items-center rounded-pill border border-line bg-background shadow-raised">
                     <button
                       type="button"
                       onClick={() => step(-1)}
                       disabled={count === 0}
                       aria-label={`One fewer ${tier.name}`}
-                      className="px-3 py-1.5 text-sm transition-colors hover:text-accent disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className="rounded-l-pill px-4 py-2.5 text-base text-muted transition-colors duration-200 hover:text-accent disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
                     >
                       &minus;
                     </button>
-                    <span className="tabular w-8 text-center text-sm font-medium">
+                    <span className="tabular w-9 text-center text-base font-medium">
                       {count}
                     </span>
                     <button
                       type="button"
                       onClick={() => step(1)}
                       aria-label={`One more ${tier.name}`}
-                      className="px-3 py-1.5 text-sm transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className="rounded-r-pill px-4 py-2.5 text-base text-muted transition-colors duration-200 hover:text-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
                     >
                       +
                     </button>
@@ -270,11 +385,16 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
 
           <div className="mt-3">
             {booking.isLoadingTimeslots ? (
-              <p className="py-8 text-center text-sm text-muted">
-                Checking availability…
-              </p>
+              /*
+                A calendar-shaped placeholder, not a line of text. The
+                text version was two lines tall where the grid is twelve,
+                so every fetch collapsed the panel and threw the page
+                below it upwards — the single most expensive-feeling bug
+                on the page, because it happened on every date change.
+              */
+              <CalendarSkeleton />
             ) : guestTotal === 0 ? (
-              <p className="py-8 text-center text-sm text-muted">
+              <p className="py-8 text-center text-[0.9375rem] text-muted">
                 Add a guest to see departures.
               </p>
             ) : (
@@ -313,13 +433,16 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
                 />
 
                 {availableDates.size === 0 && (
-                  <p className="mt-4 text-center text-sm text-muted">
+                  <p className="mt-4 text-center text-[0.9375rem] text-muted">
                     No departures this month. Try the next one.
                   </p>
                 )}
 
                 {booking.selectedDate && timesForDay.length > 0 && (
-                  <div className="mt-5 border-t border-line pt-5">
+                  // Faded in rather than popped in. The times are a
+                  // consequence of the tap that just happened, and
+                  // arriving instantly reads as a layout jump.
+                  <div className="fade-in mt-6 border-t border-line pt-6">
                     <span className="eyebrow text-muted">Departing at</span>
                     <ul className="mt-3 flex flex-wrap gap-2">
                       {timesForDay.map(slot => {
@@ -389,27 +512,41 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
           a surface recombining these.
         */}
         {booking.priceCalculation && (
-          <dl className="space-y-2 border-t border-line pt-5 text-sm">
-            {booking.priceCalculation.priceBreakdown.map((row, i) => (
-              <div key={i} className="flex justify-between gap-4">
-                <dt
-                  className={
-                    row.kind === 'TOTAL' ? 'font-medium text-foreground' : 'text-muted'
-                  }
+          <dl className="fade-in space-y-2.5 border-t border-line pt-6 text-[0.9375rem]">
+            {booking.priceCalculation.priceBreakdown.map((row, i) => {
+              /*
+                The TOTAL is the sentence the whole panel has been
+                building towards, and it was set in the same 14px as the
+                rows above it. A rule and the display face separate the
+                answer from the arithmetic — WITHOUT recombining any of
+                it: the rows are still rendered exactly as Kong composed
+                them, in order.
+              */
+              const isTotal = row.kind === 'TOTAL'
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    'flex items-baseline justify-between gap-4',
+                    isTotal && 'mt-4 border-t border-line pt-4'
+                  )}
                 >
-                  {row.label ?? row.kind}
-                </dt>
-                <dd
-                  className={
-                    row.kind === 'TOTAL'
-                      ? 'tabular font-medium text-foreground'
-                      : 'tabular text-muted'
-                  }
-                >
-                  {money(Number(row.amountCents))}
-                </dd>
-              </div>
-            ))}
+                  <dt className={isTotal ? 'font-medium text-foreground' : 'text-muted'}>
+                    {row.label ?? row.kind}
+                  </dt>
+                  <dd
+                    className={cn(
+                      'tabular',
+                      isTotal
+                        ? 'font-display text-[1.625rem] leading-none text-foreground'
+                        : 'text-muted'
+                    )}
+                  >
+                    {money(Number(row.amountCents))}
+                  </dd>
+                </div>
+              )
+            })}
           </dl>
         )}
 
@@ -431,12 +568,41 @@ export function BookingPanel({ product }: { product: StarterProduct }) {
             {booking.bookNowLabel}
           </a>
           {booking.waitlistExplanation && (
-            <p className="mt-3 text-xs text-muted">{booking.waitlistExplanation}</p>
+            <p className="mt-3 text-[0.8125rem] text-muted">
+              {booking.waitlistExplanation}
+            </p>
           )}
         </div>
       </div>
 
-      <p className="sr-only">{String(configs.scheduledActivityConfig != null)}</p>
+      {/*
+        Availability, announced. `polite` so it waits for a pause rather
+        than cutting across whatever is being read, and the region is in
+        the DOM from the first render — a live region added at the moment
+        it gains content is frequently not announced at all.
+      */}
+      <p aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
+
+      {/*
+        On a phone only. The panel is the last thing on a long page, so
+        this carries the price up to wherever the guest is reading and
+        jumps them back down to it. Hidden from `lg` up, where the panel
+        is already pinned beside the copy.
+      */}
+      <div className="lg:hidden">
+        <StickyBar show={panelOffScreen && pastHero}>
+          <Price
+            cents={leadPrice == null ? null : Number(leadPrice)}
+            size="sm"
+            className="min-w-0 shrink"
+          />
+          <a href="#book" className={buttonClass({ size: 'md', className: 'shrink-0' })}>
+            Check dates
+          </a>
+        </StickyBar>
+      </div>
     </aside>
   )
 }

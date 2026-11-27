@@ -2,7 +2,6 @@ import Link from 'next/link'
 import {
   describeDuration,
   kong,
-  money,
   PRODUCT_CARD_QUERY,
   PRODUCTS_QUERY,
   type ProductCardExtras,
@@ -12,6 +11,7 @@ import { SiteFooter, SiteHeader } from '@/components/site-chrome'
 import { site } from '@/lib/site'
 import { buttonClass } from '@/components/ui/button'
 import { Reveal } from '@/components/ui/reveal'
+import { Price } from '@/components/ui/price'
 
 /**
  * The catalogue, rendered on the server.
@@ -90,7 +90,7 @@ export default async function HomePage() {
             {site.hero.headline}
           </h1>
           <p
-            className="rise mt-5 max-w-md text-[0.9375rem] leading-relaxed text-on-deep-muted"
+            className="rise mt-5 max-w-md text-base leading-relaxed text-on-deep-muted"
             style={{ animationDelay: '160ms' }}
           >
             {site.hero.subhead}
@@ -136,7 +136,7 @@ export default async function HomePage() {
                   public and you have listed the host.
                 */}
                 {product.heroImageUrl ? (
-                  <div className="overflow-hidden">
+                  <div className="overflow-hidden rounded-panel shadow-raised">
                     <img
                       src={product.heroImageUrl}
                       alt=""
@@ -145,7 +145,7 @@ export default async function HomePage() {
                     />
                   </div>
                 ) : (
-                  <div className="aspect-[4/3] w-full bg-line" />
+                  <div className="aspect-[4/3] w-full rounded-panel bg-line" />
                 )}
               </div>
 
@@ -159,7 +159,7 @@ export default async function HomePage() {
                   </p>
                 )}
                 {product.shortDescription && (
-                  <p className="mt-5 max-w-prose text-[0.9375rem] leading-relaxed text-muted">
+                  <p className="mt-5 max-w-prose text-base leading-relaxed text-muted">
                     {product.shortDescription}
                   </p>
                 )}
@@ -179,7 +179,7 @@ export default async function HomePage() {
                   ].filter(Boolean)
                   if (facts.length === 0) return null
                   return (
-                    <ul className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted">
+                    <ul className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.8125rem] text-muted">
                       {facts.map((fact, j) => (
                         <li key={j} className="flex items-center gap-3">
                           {j > 0 && (
@@ -192,25 +192,22 @@ export default async function HomePage() {
                   )
                 })()}
 
-                <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-line pt-6">
+                <div className="mt-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-5 border-t border-line pt-6">
                   {/*
                     cheapestBookableTotalCents, not a tier price: the cheapest
                     total a guest can actually be charged, mandatory fees and
                     tax included. A tier price understates anything with a
                     minimum party size or a per-booking fee, and "from 20" that
                     becomes 35 at checkout is the complaint that causes.
+
+                    Drawn by the shared <Price>, which is the same lockup the
+                    booking panel uses — the figure a guest reads here and the
+                    one they read on the next screen should not change voice.
                   */}
-                  {product.cheapestBookableTotalCents != null && (
-                    <p className="text-sm text-muted">
-                      from{' '}
-                      <span className="tabular text-xl font-medium text-foreground">
-                        {money(product.cheapestBookableTotalCents)}
-                      </span>
-                    </p>
-                  )}
+                  <Price cents={product.cheapestBookableTotalCents} />
                   <Link
                     href={`/book/${product.productCode}`}
-                    className="group inline-flex items-center gap-2 text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="group inline-flex items-center gap-2 pb-1 text-[0.9375rem] font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
                     Check dates
                     <span

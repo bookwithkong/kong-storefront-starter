@@ -31,7 +31,7 @@ export function Callout({
     <div
       role={role}
       className={cn(
-        'fade-in border p-6',
+        'fade-in rounded-panel border p-6 shadow-raised',
         tone === 'positive'
           ? 'border-accent/40 bg-accent/10'
           : 'border-line bg-surface',
@@ -44,7 +44,7 @@ export function Callout({
         </p>
       )}
       {title && <h2 className="mt-2 font-display text-2xl">{title}</h2>}
-      {children && <div className="mt-2 text-sm leading-relaxed text-muted">{children}</div>}
+      {children && <div className="mt-2 text-[0.9375rem] leading-relaxed text-muted">{children}</div>}
     </div>
   )
 }

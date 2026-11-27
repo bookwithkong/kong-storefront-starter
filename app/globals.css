@@ -17,13 +17,37 @@
   --background: #eef3f5;
   --surface: #ffffff;
   --foreground: #0a1d27;
-  --muted: #55707d;
+  --muted: #4d6673;
   --line: #d3dfe5;
   --accent: #c97a14;
   --accent-foreground: #ffffff;
   --deep: #0b2b39;
   --on-deep: #f2f7f9;
   --on-deep-muted: #9fbac6;
+
+  /*
+   * Surfaces have a TOP and a BOTTOM.
+   *
+   * A flat fill reads as an unstyled div; two stops a few percent apart
+   * read as a surface with light falling on it. The difference is almost
+   * subliminal and it is most of what separates "a box" from "an object".
+   */
+  --surface-top: #ffffff;
+  --surface-bottom: #f6fafb;
+
+  /*
+   * Elevation, in two steps.
+   *
+   * Each shadow opens with an inset hairline along the top edge — that is
+   * the highlight a real lip catches, and it is what stops a raised panel
+   * from looking like a flat rectangle with a blur behind it.
+   */
+  --sh-raised: 0 1px 0 rgb(255 255 255 / 0.9) inset,
+               0 1px 2px rgb(10 29 39 / 0.05),
+               0 8px 20px -12px rgb(10 29 39 / 0.18);
+  --sh-panel: 0 1px 0 rgb(255 255 255 / 0.9) inset,
+              0 2px 4px rgb(10 29 39 / 0.04),
+              0 28px 56px -28px rgb(10 29 39 / 0.3);
 }
 
 /*
@@ -36,10 +60,20 @@
     --background: #061219;
     --surface: #0d2129;
     --foreground: #e7f0f4;
-    --muted: #86a1ad;
+    --muted: #9ab4c0;
     --line: #17323e;
     --accent: #e8a93c;
     --accent-foreground: #0a1d27;
+
+    --surface-top: #112a34;
+    --surface-bottom: #0d2129;
+
+    /* On a dark ground the highlight is white at low alpha, and the
+       shadow has to go much deeper to register at all. */
+    --sh-raised: 0 1px 0 rgb(255 255 255 / 0.06) inset,
+                 0 8px 20px -12px rgb(0 0 0 / 0.7);
+    --sh-panel: 0 1px 0 rgb(255 255 255 / 0.07) inset,
+                0 28px 56px -28px rgb(0 0 0 / 0.85);
   }
 }
 
@@ -48,10 +82,18 @@
   --background: #061219;
   --surface: #0d2129;
   --foreground: #e7f0f4;
-  --muted: #86a1ad;
+  --muted: #9ab4c0;
   --line: #17323e;
   --accent: #e8a93c;
   --accent-foreground: #0a1d27;
+
+  --surface-top: #112a34;
+  --surface-bottom: #0d2129;
+
+  --sh-raised: 0 1px 0 rgb(255 255 255 / 0.06) inset,
+               0 8px 20px -12px rgb(0 0 0 / 0.7);
+  --sh-panel: 0 1px 0 rgb(255 255 255 / 0.07) inset,
+              0 28px 56px -28px rgb(0 0 0 / 0.85);
 }
 
 @theme inline {
@@ -67,6 +109,21 @@
   --color-on-deep-muted: var(--on-deep-muted);
   --font-sans: var(--font-sans-stack);
   --font-display: var(--font-display-stack);
+
+  /*
+   * One radius scale, three steps, and nothing invents its own.
+   *
+   * Small on purpose. This is a yacht charter, not a consumer app — the
+   * geometry should read as precise rather than friendly. What matters is
+   * that the value is CHOSEN and shared, because a mix of 0px corners is
+   * indistinguishable from never having thought about it.
+   */
+  --radius-control: 2px;
+  --radius-panel: 3px;
+  --radius-pill: 999px;
+
+  --shadow-raised: var(--sh-raised);
+  --shadow-panel: var(--sh-panel);
 }
 
 body {
@@ -78,12 +135,54 @@ body {
 /* Prices and durations sit in columns; line the digits up. */
 .tabular { font-variant-numeric: tabular-nums }
 
-/* The eyebrow: small, spaced, and never shouting. */
+/*
+ * The eyebrow: small, spaced, and never shouting.
+ *
+ * 13px, not 11px. Tracked-out capitals lose a lot of legibility per point
+ * of size, and at 11px in a muted colour this was the smallest text on
+ * the page while labelling the most important parts of it. Small grey
+ * type is the single loudest budget signal in an interface.
+ */
 .eyebrow {
-  font-size: 0.6875rem;
-  letter-spacing: 0.14em;
+  font-size: 0.8125rem;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   font-weight: 600;
+}
+
+/*
+ * The one raised surface treatment.
+ *
+ * A gradient fill plus the shared panel shadow. Applied to the booking
+ * panel and anything else that should read as sitting ON the page rather
+ * than being cut out of it.
+ */
+.surface-panel {
+  background-image: linear-gradient(
+    to bottom,
+    var(--surface-top),
+    var(--surface-bottom)
+  );
+  box-shadow: var(--shadow-panel);
+}
+
+/*
+ * A placeholder that holds its own height.
+ *
+ * The point is the SIZE, not the shimmer: swapping a calendar for a line
+ * of centred text collapses the panel and shunts everything below it up
+ * the page. A skeleton that occupies the same box keeps the layout still
+ * while the answer arrives.
+ */
+.skeleton {
+  background: color-mix(in oklab, var(--muted) 16%, transparent);
+  border-radius: var(--radius-control);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1 }
+  50%      { opacity: 0.45 }
 }
 
 /* Radix Accordion needs these to animate open/closed. */
@@ -141,6 +240,12 @@ body {
  */
 @media (prefers-reduced-motion: reduce) {
   .rise, .fade-in, .acc-open, .acc-close, .slide-up, .drift { animation: none }
+  /*
+    The skeleton keeps its BOX — only the pulse stops. Setting
+    `animation: none` here is safe precisely because the hidden state is
+    a background colour rather than `opacity: 0`.
+  */
+  .skeleton { animation: none }
   /*
     Both halves. Killing the animation alone would leave every revealed
     element stuck at opacity 0 — the content would simply never appear.
