@@ -1,29 +1,12 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { kongLive } from '@/lib/kong'
-
-/**
- * The guest's session lives in an httpOnly cookie.
- *
- * Not localStorage. The token can read the booking AND cancel or move it,
- * so it is a credential — and a credential readable by any script on the
- * page is one XSS away from a stranger cancelling somebody's holiday.
- * httpOnly keeps it out of JavaScript entirely; the server reads it and
- * the browser never sees it.
- */
-const COOKIE = 'kong_guest_token'
-
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  sameSite: 'lax' as const,
-  // Not `secure` on http://localhost, or the cookie is silently dropped in
-  // development and the sign-in appears to do nothing.
-  secure: process.env.NODE_ENV === 'production',
-  path: '/manage',
-  maxAge: 60 * 60 * 2,
-}
+import {
+  clearGuestToken,
+  getGuestToken,
+  setGuestToken,
+} from '@/lib/guest-session'
 
 export type SignInState = { error: string | null }
 
@@ -53,8 +36,7 @@ export async function signIn(
         : { orderReference: reference }),
     })
 
-    const jar = await cookies()
-    jar.set(COOKIE, session.token, COOKIE_OPTIONS)
+    await setGuestToken(session.token)
     revalidatePath('/manage')
     return { error: null }
   } catch {
@@ -68,8 +50,7 @@ export async function signIn(
 }
 
 export async function signOut(): Promise<void> {
-  const jar = await cookies()
-  jar.delete(COOKIE)
+  await clearGuestToken()
   revalidatePath('/manage')
 }
 
@@ -79,8 +60,7 @@ export async function cancelBooking(
   _prev: CancelState,
   formData: FormData
 ): Promise<CancelState> {
-  const jar = await cookies()
-  const token = jar.get(COOKIE)?.value
+  const token = await getGuestToken()
   if (!token) return { ok: false, message: 'Your session expired. Sign in again.' }
 
   const reference = String(formData.get('bookingReference') ?? '')
@@ -104,8 +84,3 @@ export async function cancelBooking(
   }
 }
 
-/** The token, for the page to read. Server-only — it never reaches the client. */
-export async function getGuestToken(): Promise<string | null> {
-  const jar = await cookies()
-  return jar.get(COOKIE)?.value ?? null
-}

@@ -1,6 +1,7 @@
 'use server'
 
 import { kong } from '@/lib/kong'
+import { setGuestToken } from '@/lib/guest-session'
 
 /**
  * Where this site lives, for the post-payment return.
@@ -161,6 +162,7 @@ export async function createBooking(
           .join(',')}`,
       }
     )) as {
+      guestToken?: string
       order?: {
         orderReference?: string
         bookingReference?: string
@@ -168,6 +170,18 @@ export async function createBooking(
         organizationName?: string
       }
     }
+
+    /*
+      Sign the guest in, right here.
+
+      createOrder mints a guest session, and keeping it means the booking
+      is theirs to see and change immediately — and, crucially, that a
+      guest returning from the payment processor arrives already signed
+      in. That is why nothing has to be appended to `returnUrl`: the
+      credential never travels in a URL, where it would sit in browser
+      history and leak through Referer headers.
+    */
+    if (result?.guestToken) await setGuestToken(result.guestToken)
 
     const order = result?.order
     if (!order?.orderReference) {

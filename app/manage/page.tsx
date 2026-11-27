@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { kongLive, money } from '@/lib/kong'
 import { SiteFooter, SiteHeader } from '@/components/site-chrome'
-import { getGuestToken, signOut } from './actions'
+import { signOut } from './actions'
+import { getGuestToken } from '@/lib/guest-session'
 import { CancelButton, SignInForm } from './manage-client'
 
 export const metadata = { title: 'Manage your booking' }
@@ -43,7 +44,19 @@ function when(date: unknown, time: unknown) {
   }).format(new Date(y, m - 1, d, hh ?? 0, mm ?? 0))
 }
 
-export default async function ManagePage() {
+export default async function ManagePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; order_reference?: string }>
+}) {
+  /*
+    Kong appends these when it sends a guest back here after payment —
+    see `returnUrl` in app/checkout/actions.ts. They say what HAPPENED;
+    the booking itself is still read with the guest's own credential
+    below, because a status in a query string is something anyone can
+    type.
+  */
+  const { status, order_reference: returnedReference } = await searchParams
   const token = await getGuestToken()
 
   if (!token) {
@@ -106,6 +119,30 @@ export default async function ManagePage() {
             </button>
           </form>
         </div>
+
+        {status === 'success' && (
+          <div className="mt-10 border border-accent/40 bg-accent/10 p-6">
+            <p className="eyebrow text-accent">Payment received</p>
+            <h2 className="mt-2 font-display text-2xl">You're all set.</h2>
+            <p className="mt-2 text-sm text-muted">
+              A confirmation is on its way to {order.booker.email ?? 'your inbox'}
+              {returnedReference ? ` for ${returnedReference}` : ''}.
+            </p>
+          </div>
+        )}
+
+        {status === 'failed' && (
+          <div className="mt-10 border border-line bg-surface p-6">
+            <p className="eyebrow text-muted">Payment not completed</p>
+            <h2 className="mt-2 font-display text-2xl">
+              Nothing has been charged.
+            </h2>
+            <p className="mt-2 text-sm text-muted">
+              Your booking is held below — you can pay from the link in your
+              email, or start again.
+            </p>
+          </div>
+        )}
 
         <ul className="mt-12 space-y-8">
           {order.order.bookings.map(booking => {
@@ -198,7 +235,7 @@ export default async function ManagePage() {
                     */}
                     {booking.canReschedule && (
                       <Link
-                        href="/"
+                        href={`/manage/reschedule/${booking.bookingReference}`}
                         className="border border-line px-4 py-2 text-sm transition-colors hover:border-accent"
                       >
                         Move to another date
